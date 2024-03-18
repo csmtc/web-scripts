@@ -146,26 +146,27 @@
         // GM_registerMenuCommand('Download', download_cb);
     }
 
-    function main_page_handle(params) {
-        const do_filter = () => {
-            let popup = document.querySelector("#append_parent");
-            if (popup) { popup.remove(); }
-        };
-        const observer = new MutationObserver(() => {
-            do_filter();
-            observer.disconnect();
-        });
-        observer.observe(document.querySelector("#nv_forum"), { childList: true });
-        do_filter();
-    }
-    if (location.href.search("https://mcseas.club/forum.php?mod=viewthread") >= 0) {
+    // function main_page_handle() {
+    //     const do_filter = () => {
+    //         let popup = document.querySelector("#append_parent");
+    //         if (popup) { popup.remove(); }
+    //     };
+    //     const observer = new MutationObserver(() => {
+    //         do_filter();
+    //         observer.disconnect();
+    //     });
+    //     observer.observe(document.querySelector("#nv_forum"), { childList: true });
+    //     do_filter();
+    // }
+    if (/mod=viewthread/.test(location.href)) {
         console.info("McseaAssist:Novel Page");
         novel_page_handle();
     }
     // else if (/forum.php\/?$/.test(location.href)) {
     //     console.info("McseaAssist:Main Page");
     //     main_page_handle();
-    // } else {
+    // } 
+    // else if (/^file/.test(location.href)) {
     //     console.info("McseaAssist:Other Page");
     //     novel_page_handle();
     // }
