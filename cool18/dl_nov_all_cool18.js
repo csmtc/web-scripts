@@ -6,7 +6,7 @@
 // @author       You
 // @match        https://www.cool18.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=cool18.com
-// @require http://code.jquery.com/jquery-latest.js
+// @require      http://code.jquery.com/jquery-latest.js
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
 // ==/UserScript==
