@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name         McseaDownloader
 // @namespace    https://mcseas.club/
-// @version      2024.3.29.2
+// @version      2024.3.29.3
 // @description  prettify and download novel on mcsea
 // @author       You!
 // @match        https://mcseas.club/*
+// @connect      https://mcseas.club/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
 // @updateURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/mcseas.downloader.js
 // @downloadURL  https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/mcseas.downloader.js
 // @grant        GM_registerMenuCommand
+// @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
 
@@ -44,20 +46,13 @@
         // 释放内存
         URL.revokeObjectURL(url);
     }
-    /**
-     * 检查文章是否为免费文章或是已购买文章
-     * @returns 是否购买了该文章
-     */
-    function is_paid() {
-        return document.querySelector("a[title=购买主题]") === null;
-    }
+
 
     /**
      * 过滤目标结点的所有垃圾子节点
      * @param {Element} targetNode
      * @returns {Number} filtered_cnt 过滤的子结点个数
      */
-    let filtered_trash_children_cnt = -1;
     function filterTrashChildren(targetNode, class_names = "") {
         assert_neq(targetNode, null, "filter fail.targetNode is null.");
         assert_neq(targetNode.children, null, "filter fail.No children belong to targetNode.");
@@ -67,34 +62,34 @@
         if (is_paid()) {
             class_names += "|locked";
         }
-        let is_jammer = (element) => {
+        function is_jammer(element) {
             return element.tagName == "font" ||
                 element.className.search(class_names) >= 0 ||
                 element.style.cssText.search("display:\\s*none") >= 0;
         };
 
+
+        let filtered_trash_children_cnt = 0;
         /**
-         *
          * @param {Element} node
          */
         function iter(node) {
             if (node) {
-                for (let ch of node.children) {
-                    // console.log(!is_jammer(ch), ch.tagName, ch.className, ch.style.cssText);
+                for (let i = 0; i < node.children.length;) {
+                    let ch = node.children[i];
+                    console.log(!is_jammer(ch), ch.tagName, ch.className, ch.style.cssText);
                     if (is_jammer(ch)) {
                         node.removeChild(ch);
                         ++filtered_trash_children_cnt;
                     } else {
-                        iter(ch);
+                        iter(ch); ++i;
                     }
                 }
             }
         }
-        if (filtered_trash_children_cnt !== 0) {
-            filtered_trash_children_cnt = 0;
-            iter(targetNode);
-            // console.info("Filter trash nodes cnt=" + filtered_trash_children_cnt);
-        }
+        iter(targetNode);
+        // console.info("Filter trash nodes cnt=" + filtered_trash_children_cnt);
+
         return filtered_trash_children_cnt;
     }
 
@@ -119,18 +114,25 @@
         const config = { attributes: true, childList: true, subtree: true };
 
         // 创建一个观察器实例并监听`targetNode`元素的变动
+        let update_cnt = 0;
         const do_update = (mutationsList = null, observer = null) => {
-            if (filterTrashChildren(targetNode)) {
+            if (filterTrashChildren(targetNode) || update_cnt === 0) {
                 let text = targetNode.textContent;
                 novel_data.mainText = prettify(text);
-                console.info("Ctx Update.Now word cnts=", novel_data.mainText.length);
+                ++update_cnt;
+                console.info("Ctx Update times:" + update_cnt + "Now word cnts = ", novel_data.mainText.length);
             }
         }
         const observer = new MutationObserver(do_update);
         observer.observe(targetNode, config);
         do_update();
     }
-
+    /**
+     * 检查文章是否为免费文章或是已购买文章
+     */
+    function is_paid(doc = document) {
+        return doc.querySelector("a.y.viewpay") === null;
+    }
     class NovelData {
         title = ""
         postTime = new Date(0)
@@ -142,32 +144,44 @@
             return this.getTitle() + "\nposton " + this.postTime + "\n" + this.mainText;
         }
     }
+    function saveNovelData(data) {
+        createAndDownloadFile(data.getTitle() + ".txt", data.getMainText());
+    }
     /**
-     * 在小说阅读页面过滤乱码，追加下载按钮
+     * 从指定Document中抓取小说数据
+     * @param {Document} doc 
+     * @param {boolean} is_pc 
+     * @returns 
      */
-    function novel_page_handle() {
-        let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
-        var mainpost, data = new NovelData();
+    function fetchNovelData(doc, is_pc) {
+        let mainpost, data = new NovelData();
         if (is_pc) {
-            mainpost = document.querySelector("td[id^=postmessage_]");
-            data.postTime = document.querySelector("em[id^=authorposton]").textContent;
-            data.title = document.querySelector("#thread_subject").textContent;
+            mainpost = doc.querySelector("td[id^=postmessage_]");
+            data.postTime = doc.querySelector("em[id^=authorposton]").textContent;
+            data.title = doc.querySelector("#thread_subject").textContent;
         } else {
-            mainpost = document.querySelector("#ainuoloadmore .message");
-            data.postTime = document.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span").textContent;
-            data.title = document.querySelector(".tit.cl>h1").textContent;
+            mainpost = doc.querySelector("#ainuoloadmore .message");
+            data.postTime = doc.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span").textContent;
+            data.title = doc.querySelector(".tit.cl>h1").textContent;
         }
         assert_neq(mainpost, null, "Mainpost is null.");
         assert(() => typeof (data.title) === "string" && data.title.length > 0, "Match title failed.");
         let postTimeMatch = data.postTime.match(/20\d{2}-\d{1,2}-\d{1,2}/);
         if (postTimeMatch) data.postTime = postTimeMatch[0];
         observeCtxUpdate(mainpost, data);
-        function download_cb() {
-            // console.log(data.getMainText());
-            if (!is_paid()) prompt("Haven't paid this topic.");
-            else createAndDownloadFile(data.getTitle() + ".txt", data.getMainText())
-        };
 
+        return data;
+    }
+
+    /**
+     * 在小说阅读页面过滤乱码，追加下载按钮
+     */
+    function novel_page_handle() {
+        let novel_data = fetchNovelData(document, is_pc);
+        function download_cb() {
+            assert(is_paid())
+            saveNovelData(novel_data);
+        };
         // 附加下载按钮
         let container;
         let btn = document.createElement('a');
@@ -186,30 +200,108 @@
         container.appendChild(btn);
         // GM_registerMenuCommand('Download', download_cb);
     }
+    /**
+     * 异步载入网页
+     * @param {string} url 
+     */
+    async function xhr_get(url) {
+        const promise = new Promise((resolve, reject) => {
+            let headers = {
+                // "referer": document.location.href,
+                // 'User-Agent': navigator.userAgent,
+                // "cookie": document.cookie,
+                'Content-Type': 'text/html;charset=utf-8',
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "accept-language": "en-CN,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,en-GB;q=0.6,en-US;q=0.5",
+                "cache-control": "max-age=0",
+                "upgrade-insecure-requests": "1",
+            }
+            // USE XHR
+            let xhr = new XMLHttpRequest();
+            xhr.open("GET", url);
+            for (let key in headers) {
+                xhr.setRequestHeader(key, headers[key]);
+            }
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    let doc = new DOMParser().parseFromString(xhr.responseText, 'text/html');
+                    resolve(doc);
+                }
+            }
+            xhr.send();
+        })
+        return promise;
+    }
+    function writer_page_handle() {
+        function createButton(url) {
+            let btn = document.createElement("input");
+            btn.type = "button";
+            btn.value = "DL";
+            btn.addEventListener("click", async () => {
+                let doc = await xhr_get(url);
+                let novel_data = fetchNovelData(doc, is_pc);
+                if (is_paid(doc)) {
+                    // console.log(novel_data);
+                    saveNovelData(novel_data);
+                } else {
+                    btn.value = "未购买";
+                    btn.checked = true;
+                }
 
-    // function main_page_handle() {
-    //     const do_filter = () => {
-    //         let popup = document.querySelector("#append_parent");
-    //         if (popup) { popup.remove(); }
-    //     };
-    //     const observer = new MutationObserver(() => {
-    //         do_filter();
-    //         observer.disconnect();
-    //     });
-    //     observer.observe(document.querySelector("#nv_forum"), { childList: true });
-    //     do_filter();
-    // }
+            })
+            return btn;
+        }
+        if (is_pc) {
+            let table = document.querySelector("#delform tbody");
+            for (let i = 1; i < table.children.length; ++i) {
+                let th = table.children[i].querySelector("th");
+                let btn = createButton(th.firstElementChild.href);
+                th.insertBefore(btn, th.firstChild);
+            }
+        } else {
+            let postlist = document.querySelector(".ainuo_piclist ul");
+            for (let c of postlist.children) {
+                let a = c.querySelector("a.litwo"); c.removeChild(a);
+                let btn = createButton(a.href);
+                let box = a.firstElementChild; a.removeChild(box);
+                let tbox = box.lastElementChild; box.removeChild(tbox);
+                a.appendChild(tbox);
+                box.appendChild(btn); box.appendChild(a);
+                c.appendChild(box);
+
+            }
+        }
+    }
+
+    function main_page_handle() {
+        const do_filter = () => {
+            let popup = document.querySelector("#append_parent");
+            if (popup) { popup.remove(); }
+        };
+        const observer = new MutationObserver(() => {
+            do_filter();
+            observer.disconnect();
+        });
+        observer.observe(document.querySelector("#nv_forum"), { childList: true });
+        do_filter();
+    }
+
+    let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
     if (/mod=viewthread/.test(location.href)) {
         console.info("McseaAssist:Novel Page");
         novel_page_handle();
+    } else if (/mod=space/.test(location.href)) {
+        console.info("McseaAssist:Writer Page");
+        writer_page_handle();
     }
-    // else if (/forum.php\/?$/.test(location.href)) {
-    //     console.info("McseaAssist:Main Page");
-    //     main_page_handle();
-    // } 
+    else if (/forum.php\/?$/.test(location.href) && /view=me/.test(location.href)) {
+        console.info("McseaAssist:Main Page");
+        main_page_handle();
+    }
     else if (/^file/.test(location.href)) {
         console.info("McseaAssist:Other Page");
-        novel_page_handle();
+        // novel_page_handle();
+        writer_page_handle()
     }
 })();
 
