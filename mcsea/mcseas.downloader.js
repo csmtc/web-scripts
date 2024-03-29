@@ -6,7 +6,7 @@
 // @author       You
 // @match        https://mcseas.club/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
-// @downloadURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/mcseas.downloader.js
+// @downloadURL  https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/mcseas.downloader.js
 // @grant        GM_registerMenuCommand
 // ==/UserScript==
 
