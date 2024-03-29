@@ -236,7 +236,7 @@
         function createButton(url) {
             let btn = document.createElement("input");
             btn.type = "button";
-            btn.value = "DL";
+            btn.value = "下载";
             btn.addEventListener("click", async () => {
                 let doc = await xhr_get(url);
                 let novel_data = fetchNovelData(doc, is_pc);
@@ -266,7 +266,7 @@
                 let box = a.firstElementChild; a.removeChild(box);
                 let tbox = box.lastElementChild; box.removeChild(tbox);
                 a.appendChild(tbox);
-                box.appendChild(btn); box.appendChild(a);
+                box.appendChild(a); box.appendChild(btn);
                 c.appendChild(box);
 
             }
