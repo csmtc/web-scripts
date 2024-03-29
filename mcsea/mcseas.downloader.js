@@ -42,7 +42,13 @@
         // 释放内存
         URL.revokeObjectURL(url);
     }
-
+    /**
+     * 检查文章是否为免费文章或是已购买文章
+     * @returns 是否购买了该文章
+     */
+    function is_paid() {
+        return document.querySelector("a[title=购买主题]") === null;
+    }
 
     /**
      * 过滤目标结点的所有垃圾子节点
@@ -50,16 +56,21 @@
      * @returns {Number} filtered_cnt 过滤的子结点个数
      */
     let filtered_trash_children_cnt = -1;
-    function filterTrashChildren(targetNode) {
+    function filterTrashChildren(targetNode, class_names = "") {
         assert_neq(targetNode, null, "filter fail.targetNode is null.");
         assert_neq(targetNode.children, null, "filter fail.No children belong to targetNode.");
         // style:display:none
         // font.jammer
+        class_names += "jammer|pstatus|blockcode";
+        if (is_paid()) {
+            class_names += "|locked";
+        }
         let is_jammer = (element) => {
             return element.tagName == "font" ||
-                element.className.search("jammer|pstatus|quote|blockcode") >= 0 ||
+                element.className.search(class_names) >= 0 ||
                 element.style.cssText.search("display:\\s*none") >= 0;
         };
+
         /**
          *
          * @param {Element} node
@@ -85,19 +96,31 @@
         return filtered_trash_children_cnt;
     }
 
+    /**
+     * 调整正文内容格式
+     * @param {string} mainText 
+     * @returns {string} 格式化的正文内容
+     */
+    function prettify(mainText) {
+        // 首行缩进2格，段落间空一行
+        mainText = mainText.replace(/\n\s+/g, "\n\n\t");
+        // console.log(mainText);
+        return mainText
+    }
 
     /**
      * 检测到目标结点发生更新时，重新刷新内容
      * @param {Element} targetNode
      */
-    function observe_ctx_update(targetNode, novel_data) {
+    function observeCtxUpdate(targetNode, novel_data) {
         // 观察器的配置（需要观察什么变动）
         const config = { attributes: true, childList: true, subtree: true };
 
         // 创建一个观察器实例并监听`targetNode`元素的变动
         const do_update = (mutationsList = null, observer = null) => {
             if (filterTrashChildren(targetNode)) {
-                novel_data.mainText = novel_data.title + '\n' + targetNode.textContent;
+                let text = targetNode.textContent;
+                novel_data.mainText = prettify(text);
                 console.info("Ctx Update.Now word cnts=", novel_data.mainText.length);
             }
         }
@@ -106,26 +129,42 @@
         do_update();
     }
 
+    class NovelData {
+        title = ""
+        postTime = new Date(0)
+        mainText = ""
+        getTitle() {
+            return this.title;
+        }
+        getMainText() {
+            return this.getTitle() + "\nposton " + this.postTime + "\n" + this.mainText;
+        }
+    }
     /**
-     * 在小说阅读页面过滤乱码
+     * 在小说阅读页面过滤乱码，追加下载按钮
      */
     function novel_page_handle() {
         let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
-        var mainpost, novel_data = {
-            title: "",
-            mainText: ""
-        };
+        var mainpost, data = new NovelData();
         if (is_pc) {
-            mainpost = document.querySelector("#postlist .t_f");
-            novel_data.title = document.querySelector("#thread_subject").textContent;
+            mainpost = document.querySelector("td[id^=postmessage_]");
+            data.postTime = document.querySelector("em[id^=authorposton]").textContent;
+            data.title = document.querySelector("#thread_subject").textContent;
         } else {
             mainpost = document.querySelector("#ainuoloadmore .message");
-            novel_data.title = document.querySelector(".tit.cl>h1").textContent;
+            data.postTime = document.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span").textContent;
+            data.title = document.querySelector(".tit.cl>h1").textContent;
         }
         assert_neq(mainpost, null, "Mainpost is null.");
-        assert(() => typeof (novel_data.title) === "string" && novel_data.title.length > 0, "Match title failed.")
-        observe_ctx_update(mainpost, novel_data);
-        let download_cb = () => { createAndDownloadFile(novel_data.title + ".txt", novel_data.mainText) };
+        assert(() => typeof (data.title) === "string" && data.title.length > 0, "Match title failed.");
+        let postTimeMatch = data.postTime.match(/20\d{2}-\d{1,2}-\d{1,2}/);
+        if (postTimeMatch) data.postTime = postTimeMatch[0];
+        observeCtxUpdate(mainpost, data);
+        function download_cb() {
+            // console.log(data.getMainText());
+            if (!is_paid()) prompt("Haven't paid this topic.");
+            else createAndDownloadFile(data.getTitle() + ".txt", data.getMainText())
+        };
 
         // 附加下载按钮
         let container;
@@ -166,10 +205,10 @@
     //     console.info("McseaAssist:Main Page");
     //     main_page_handle();
     // } 
-    // else if (/^file/.test(location.href)) {
-    //     console.info("McseaAssist:Other Page");
-    //     novel_page_handle();
-    // }
+    else if (/^file/.test(location.href)) {
+        console.info("McseaAssist:Other Page");
+        novel_page_handle();
+    }
 })();
 
 
