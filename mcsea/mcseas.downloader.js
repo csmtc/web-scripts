@@ -77,7 +77,7 @@
             if (node) {
                 for (let i = 0; i < node.children.length;) {
                     let ch = node.children[i];
-                    console.log(!is_jammer(ch), ch.tagName, ch.className, ch.style.cssText);
+                    // console.log(!is_jammer(ch), ch.tagName, ch.className, ch.style.cssText);
                     if (is_jammer(ch)) {
                         node.removeChild(ch);
                         ++filtered_trash_children_cnt;
@@ -179,7 +179,6 @@
     function novel_page_handle() {
         let novel_data = fetchNovelData(document, is_pc);
         function download_cb() {
-            assert(is_paid())
             saveNovelData(novel_data);
         };
         // 附加下载按钮
@@ -300,8 +299,8 @@
     }
     else if (/^file/.test(location.href)) {
         console.info("McseaAssist:Other Page");
-        // novel_page_handle();
-        writer_page_handle()
+        novel_page_handle();
+        // writer_page_handle()
     }
 })();
 
