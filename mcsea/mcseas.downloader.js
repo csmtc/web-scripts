@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         McseaDownloader
 // @namespace    https://mcseas.club/
-// @version      2024-03-18
+// @version      2024.3.29
 // @description  try to take over the world!
 // @author       You
 // @match        https://mcseas.club/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
+// @updateURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/mcseas.downloader.js
 // @grant        GM_registerMenuCommand
 // ==/UserScript==
 
