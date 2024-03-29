@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         McseaDownloader
 // @namespace    https://mcseas.club/
-// @version      2024.3.29.3
+// @version      2024.3.29.4
 // @description  prettify and download novel on mcsea
 // @author       You!
 // @match        https://mcseas.club/*
