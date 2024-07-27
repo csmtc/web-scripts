@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         McseaDownloader
 // @namespace    https://mcseas.club/
-// @version      2024.3.29.4
+// @version      2024.7.27
 // @description  prettify and download novel on mcsea
 // @author       You!
 // @match        https://mcseas.club/*
@@ -135,8 +135,12 @@
     }
     class NovelData {
         title = ""
+        writer = ""
         postTime = new Date(0)
         mainText = ""
+        getWriter() {
+            return this.writer;
+        }
         getTitle() {
             return this.title;
         }
@@ -145,7 +149,7 @@
         }
     }
     function saveNovelData(data) {
-        createAndDownloadFile(data.getTitle() + ".txt", data.getMainText());
+        createAndDownloadFile(data.getTitle() +"-"+data.getWriter()+ ".txt", data.getMainText());
     }
     /**
      * 从指定Document中抓取小说数据
@@ -157,10 +161,12 @@
         let mainpost, data = new NovelData();
         if (is_pc) {
             mainpost = doc.querySelector("td[id^=postmessage_]");
+            data.writer = doc.querySelector("a.xw1[href*=space]").textContent;
             data.postTime = doc.querySelector("em[id^=authorposton]").textContent;
             data.title = doc.querySelector("#thread_subject").textContent;
         } else {
             mainpost = doc.querySelector("#ainuoloadmore .message");
+            data.writer = doc.querySelectorAll("a[href*=space]")[2].textContent;
             data.postTime = doc.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span").textContent;
             data.title = doc.querySelector(".tit.cl>h1").textContent;
         }
