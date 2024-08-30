@@ -4,7 +4,7 @@
 // @version      2024.8.30.1
 // @description  try to take over the world!
 // @author       csmtc
-// @match        https://www.cool18.com/*
+// @match        https://*.cool18.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=cool18.com
 // @require      http://code.jquery.com/jquery-latest.js
 // @updateURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/cool18/dl_nov_all_cool18.js
