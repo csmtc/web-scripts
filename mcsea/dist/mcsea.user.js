@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         mcsea
 // @namespace    https://mcseas.club/
-// @version      2024.12.14.1
+// @version      2024.12.14.2
 // @author       monkey
 // @description  prettify and download novel on mcsea
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
-// @downloadURL  https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcseas.user.js
-// @updateURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcseas.user.js
+// @downloadURL  https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js
+// @updateURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js
 // @match        https://mcseas.club/*
 // @connect      https://mcseas.club/*
 // ==/UserScript==
