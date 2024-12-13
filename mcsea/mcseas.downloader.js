@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         McseaDownloader
 // @namespace    https://mcseas.club/
-// @version      2024.12.13
+// @version      2024.12.13.1
 // @description  prettify and download novel on mcsea
 // @author       You!
 // @match        https://mcseas.club/*
@@ -341,7 +341,8 @@
     }
 
     let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
-    document.title = t2s(document.title);// 翻译标题
+    document.title = t2s(document.title);
+    transformContent();
     if (/mod=viewthread/.test(location.href)) {
         console.info("McseaAssist:Novel Page");
         novel_page_handle();
