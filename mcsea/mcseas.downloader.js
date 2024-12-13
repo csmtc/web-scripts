@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         McseaDownloader
 // @namespace    https://mcseas.club/
-// @version      2024.12.13.2
+// @version      2024.12.13.3
 // @description  prettify and download novel on mcsea
 // @author       You!
 // @match        https://mcseas.club/*
@@ -27,7 +27,7 @@
         assert(() => obj !== tgt, msg);
     }
 
-    var _first_log_timestamp = null;
+    let _first_log_timestamp = null;
     function log_time_cost() {
         if (_first_log_timestamp == null) {
             _first_log_timestamp = new Date().getTime();
@@ -175,12 +175,6 @@
         do_update();
     }
 
-    /**
-     * 检查文章是否为免费文章或是已购买文章
-     */
-    function is_paid(doc = document) {
-        return doc.querySelector("a.y.viewpay") === null;
-    }
     class NovelData {
         title = ""
         writer = ""
@@ -276,6 +270,14 @@
     }
 
     function writer_page_handle() {
+
+        /**
+         * 检查文章是否为免费文章或是已购买文章
+         */
+        function is_paid(doc = document) {
+            return doc.querySelector("a.y.viewpay") === null;
+        }
+
         /**
         * 异步载入网页
         * @param {string} url 
