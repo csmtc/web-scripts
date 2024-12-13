@@ -23,8 +23,11 @@ function log_time_cost() {
 
 //============================简繁转换START=================================
 
-import { toSimplified, toTraditional } from 'convert-chinese-chars';
-
+import * as OpenCC from 'opencc-js';
+const converter = OpenCC.Converter({ from: 'tw', to: 'cn' });
+function toSimplified(text) {
+    return converter(text);
+}
 //功能：转换对象，使用递归，逐层剥到文本；
 function translateDOM(fobj = document.body, t2s = true) {
     var objs = typeof (fobj) == "object" ? fobj.childNodes : document.body.childNodes;
