@@ -1,16 +1,16 @@
 
-function assert(checkfunc, msg = "") {
+export function assert(checkfunc, msg = "") {
     if (!checkfunc()) {
         window.alert(msg);
         throw new EvalError("Assert Failed." + msg);
     }
 }
-function assert_neq(obj, tgt, msg = "") {
+export function assert_neq(obj, tgt, msg = "") {
     assert(() => obj !== tgt, msg);
 }
 
-let _first_log_timestamp = null;
-function log_time_cost() {
+let _first_log_timestamp: number | null = null;
+export function log_time_cost() {
     if (_first_log_timestamp == null) {
         _first_log_timestamp = new Date().getTime();
     } else {

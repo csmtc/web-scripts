@@ -3,14 +3,9 @@ import monkey from 'vite-plugin-monkey';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // resolve: {
-  //   alias: {
-  //     'convert-chinese-chars': 'convert-chinese-chars/build/convert-chinese-chars.min.js', // 指向正确的文件
-  //   },
-  // },
   plugins: [
     monkey({
-      entry: 'src/main.js',
+      entry: 'src/main.ts',
       userscript: {
         namespace: "https://mcseas.club/",
         description: 'prettify and download novel on mcsea',

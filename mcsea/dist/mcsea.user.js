@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         mcsea
 // @namespace    https://mcseas.club/
-// @version      2024.12.14.2
+// @version      2024.12.20
 // @author       monkey
 // @description  prettify and download novel on mcsea
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
@@ -9,14 +9,13 @@
 // @updateURL    https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js
 // @match        https://mcseas.club/*
 // @connect      https://mcseas.club/*
+// @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
 // ==/UserScript==
 
 (function () {
   'use strict';
 
-  var __defProp = Object.defineProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   class Trie {
     // 使用 Map 實作 Trie 樹
     // Trie 的每個節點為一個 Map 物件
@@ -191,6 +190,20 @@
     to: toDicts
   });
   const Converter = ConverterBuilder(Locale);
+  const converter = Converter({ from: "tw", to: "cn" });
+  function toSimplified(text) {
+    return converter(text);
+  }
+  function translateDOM(fobj = document.body, t2s = true) {
+    var objs = typeof fobj == "object" ? fobj.childNodes : document.body.childNodes;
+    for (let i = 0; i < objs.length; i++) {
+      if (objs[i].nodeType === 3) {
+        objs[i].textContent = toSimplified(objs[i].textContent);
+      } else if (objs[i].nodeType === 1) {
+        translateDOM(objs[i]);
+      }
+    }
+  }
   function assert(checkfunc, msg = "") {
     if (!checkfunc()) {
       window.alert(msg);
@@ -209,78 +222,53 @@
       console.log("Time cost(ms):" + (cur - _first_log_timestamp));
     }
   }
-  const converter = Converter({ from: "tw", to: "cn" });
-  function toSimplified(text) {
-    return converter(text);
-  }
-  function translateDOM(fobj = document.body, t2s = true) {
-    var objs = typeof fobj == "object" ? fobj.childNodes : document.body.childNodes;
-    for (let i = 0; i < objs.length; i++) {
-      if (objs[i].nodeType === 3) {
-        objs[i].textContent = toSimplified(objs[i].textContent);
-      } else if (objs[i].nodeType === 1) {
-        translateDOM(objs[i]);
-      }
+  var _GM_registerMenuCommand = /* @__PURE__ */ (() => typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0)();
+  var _GM_unregisterMenuCommand = /* @__PURE__ */ (() => typeof GM_unregisterMenuCommand != "undefined" ? GM_unregisterMenuCommand : void 0)();
+  class McseaConfig {
+    constructor() {
+      this.filterCite = false;
+      this.downloadType = "auto";
     }
   }
-  function observeCtxUpdate(targetNode, novel_data) {
-    function prettify(mainText) {
-      mainText = mainText.replace(/\n\s+/g, "\n\n	");
-      return mainText;
+  let config = new McseaConfig();
+  class MenuItem {
+    constructor(title_, callback_) {
+      this.cal_title = title_;
+      this.callback = () => {
+        callback_(this);
+        update();
+      };
     }
-    function filterTrashChildren(targetNode2, class_names = "") {
-      assert_neq(targetNode2, null, "filter fail.targetNode is null.");
-      assert_neq(targetNode2.children, null, "filter fail.No children belong to targetNode.");
-      class_names += "jammer|pstatus|blockcode";
-      if (is_paid()) {
-        class_names += "|locked";
-      }
-      function is_jammer(element) {
-        return element.tagName == "font" || element.className.search(class_names) >= 0 || element.style.cssText.search("display:\\s*none") >= 0;
-      }
-      let filtered_trash_children_cnt = 0;
-      function iter(node) {
-        if (node) {
-          for (let i = 0; i < node.children.length; ) {
-            let ch = node.children[i];
-            if (is_jammer(ch)) {
-              node.removeChild(ch);
-              ++filtered_trash_children_cnt;
-            } else {
-              iter(ch);
-              ++i;
-            }
-          }
-        }
-      }
-      iter(targetNode2);
-      return filtered_trash_children_cnt;
+  }
+  let menuitems = Array.of(
+    new MenuItem(() => `过滤免费引文 ${config.filterCite ? "✔️" : "⭕"}`, (item) => {
+      config.filterCite = !config.filterCite;
+    }),
+    new MenuItem(() => `自动检测下载格式 ${config.downloadType === "auto" ? "✔️" : "⭕"}`, (item) => {
+      config.downloadType = "auto";
+    }),
+    new MenuItem(() => `纯文本下载格式 ${config.downloadType === "plain" ? "✔️" : "⭕"}`, (item) => {
+      config.downloadType = "auto";
+    }),
+    new MenuItem(() => `HTML下载格式 ${config.downloadType === "rich" ? "✔️" : "⭕"}`, (item) => {
+      config.downloadType = "auto";
+    })
+  );
+  function update() {
+    for (let menu of menuitems) {
+      if (menu.command_id) _GM_unregisterMenuCommand(menu.command_id);
+      menu.command_id = _GM_registerMenuCommand(menu.cal_title(), menu.callback);
+      console.log(`config:${menu.cal_title}`);
     }
-    let update_cnt = 0;
-    const do_update = (mutationsList = null, observer2 = null) => {
-      if (filterTrashChildren(targetNode) || update_cnt === 0) {
-        translateDOM(targetNode);
-        let text = targetNode.textContent;
-        novel_data.mainText = prettify(text);
-        ++update_cnt;
-        console.info("Ctx Update times:" + update_cnt + "Now word cnts = ", novel_data.mainText.length);
-        log_time_cost();
-      }
-    };
-    const observer = new MutationObserver(do_update);
-    const config = { attributes: true, childList: true, subtree: true };
-    observer.observe(targetNode, config);
-    do_update();
   }
-  function is_paid(doc = document) {
-    return doc.querySelector("a.y.viewpay") === null;
-  }
+  update();
   class NovelData {
     constructor() {
-      __publicField(this, "title", "");
-      __publicField(this, "writer", "");
-      __publicField(this, "postTime", /* @__PURE__ */ new Date(0));
-      __publicField(this, "mainText", "");
+      this.isPlainText = true;
+      this.title = "";
+      this.writer = "";
+      this.postTime = "";
+      this.context = "";
     }
     getWriter() {
       return this.writer;
@@ -289,8 +277,166 @@
       return this.title;
     }
     getMainText() {
-      return this.getTitle() + "\nposton " + this.postTime + "\n" + this.mainText;
+      var text = this.getTitle();
+      if (this.postTime) {
+        text += "\nposton " + this.postTime;
+      }
+      text += this.context;
+      return text;
     }
+  }
+  function is_paid(doc = document) {
+    return doc.querySelector("a.y.viewpay") === null;
+  }
+  function prettify(mainText) {
+    return mainText;
+  }
+  function filterTrashChildren(targetNode, class_names = "") {
+    assert_neq(targetNode, null, "filter fail.targetNode is null.");
+    assert_neq(targetNode.children, null, "filter fail.No children belong to targetNode.");
+    class_names += "jammer|pstatus|blockcode";
+    if (config.filterCite) {
+      class_names += "|quote";
+    }
+    if (is_paid()) {
+      class_names += "|locked";
+    }
+    function is_jammer(element) {
+      return element.tagName == "font" || element.className.search(class_names) >= 0 || element.style.cssText.search("display:\\s*none") >= 0;
+    }
+    let filtered_trash_children_cnt = 0;
+    function iter(node) {
+      if (node) {
+        for (let i = 0; i < node.children.length; ) {
+          let ch = node.children[i];
+          if (is_jammer(ch)) {
+            node.removeChild(ch);
+            ++filtered_trash_children_cnt;
+          } else {
+            iter(ch);
+            ++i;
+          }
+        }
+      }
+    }
+    iter(targetNode);
+    return filtered_trash_children_cnt;
+  }
+  async function getImageByFetch(img) {
+    const response = await fetch(img.src);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        var _a;
+        if (reader.result)
+          resolve((_a = reader.result) == null ? void 0 : _a.toString());
+        else
+          reject("image download fail");
+      };
+      reader.onerror = (error) => reject("image download fail" + error);
+      reader.readAsDataURL(blob);
+    });
+  }
+  const getImage = getImageByFetch;
+  const imageCache = /* @__PURE__ */ new Map();
+  async function extractRichContext(mainpost) {
+    let imagePromises = Array();
+    function fetchImages(root) {
+      for (let node of root.children) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          if ("img" === node.tagName.toLowerCase()) {
+            if (imageCache.has(node.id))
+              continue;
+            let p = getImage(node).then((base64) => {
+              imageCache.set(
+                node.id,
+                base64
+              );
+            });
+            imagePromises.push(p);
+          } else {
+            fetchImages(node);
+          }
+        }
+      }
+    }
+    function iter(root) {
+      let context2 = "";
+      for (let node of root.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          context2 += node.textContent;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          let tagName = node.tagName.toLowerCase();
+          if (tagName === "p") {
+            context2 += "<br>" + iter(node) + "<br>";
+          } else if (tagName === "br") {
+            context2 += "<br>";
+          } else if (tagName === "img") {
+            const base64 = imageCache.get(node.id);
+            if (base64) {
+              context2 += `<img src="${base64}">`;
+            } else {
+              console.log(`iter Error.${node.id} not found`);
+            }
+          } else {
+            context2 += iter(node);
+          }
+        }
+      }
+      return context2;
+    }
+    fetchImages(mainpost);
+    await Promise.all(imagePromises);
+    console.log(imageCache.keys());
+    let context = iter(mainpost);
+    return context;
+  }
+  async function extractNovelContext(mainpost, data = new NovelData()) {
+    filterTrashChildren(mainpost);
+    let imgs = mainpost.querySelectorAll("img");
+    if (config.downloadType === "auto" && imgs.length == 0 || config.downloadType === "plain") {
+      data.context = mainpost.textContent;
+      data.context = prettify(data.context);
+    } else {
+      data.isPlainText = false;
+      data.context = await extractRichContext(mainpost);
+    }
+    return data;
+  }
+  async function extractNovelData(doc, is_pc2) {
+    var _a, _b, _c, _d, _e;
+    let mainpost;
+    let writer, postTime, title;
+    if (is_pc2) {
+      mainpost = doc.querySelector("td[id^=postmessage_]");
+      writer = (_a = doc.querySelector("a.xw1[href*=space]")) == null ? void 0 : _a.textContent;
+      postTime = (_b = doc.querySelector("em[id^=authorposton]")) == null ? void 0 : _b.textContent;
+      title = (_c = doc.querySelector("#thread_subject")) == null ? void 0 : _c.textContent;
+    } else {
+      mainpost = doc.querySelector("#ainuoloadmore .message");
+      writer = doc.querySelectorAll("a[href*=space]")[2].textContent;
+      postTime = (_d = doc.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span")) == null ? void 0 : _d.textContent;
+      title = (_e = doc.querySelector(".tit.cl>h1")) == null ? void 0 : _e.textContent;
+    }
+    if (writer === null) {
+      throw new Error("extract writer fail.");
+    }
+    if (postTime === null) {
+      throw new Error("extract postTime fail.");
+    }
+    if (title === null) {
+      throw new Error("extract title fail.");
+    }
+    if (!(typeof (mainpost == null ? void 0 : mainpost.textContent) === "string" && mainpost.textContent.length > 0)) {
+      throw new Error("extract mainpost fail.");
+    }
+    return extractNovelContext(mainpost).then((data) => {
+      data.title = toSimplified(title), data.writer = writer, data.postTime = postTime;
+      let postTimeMatch = data.postTime.match(/20\d{2}-\d{1,2}-\d{1,2}/);
+      if (postTimeMatch) data.postTime = postTimeMatch[0];
+      return data;
+    });
   }
   function saveNovelData(data) {
     function createAndDownloadFile(fileName, data2, type = "text/plain;charset=utf-8") {
@@ -302,59 +448,33 @@
       a.click();
       URL.revokeObjectURL(url);
     }
-    createAndDownloadFile(data.getTitle() + "-" + data.getWriter() + ".txt", data.getMainText());
-  }
-  function extractNovelData(doc, is_pc2) {
-    let mainpost, data = new NovelData();
-    if (is_pc2) {
-      mainpost = doc.querySelector("td[id^=postmessage_]");
-      data.writer = doc.querySelector("a.xw1[href*=space]").textContent;
-      data.postTime = doc.querySelector("em[id^=authorposton]").textContent;
-      data.title = doc.querySelector("#thread_subject").textContent;
+    if (data.isPlainText) {
+      createAndDownloadFile(data.getTitle() + "-" + data.getWriter() + ".txt", data.getMainText());
     } else {
-      mainpost = doc.querySelector("#ainuoloadmore .message");
-      data.writer = doc.querySelectorAll("a[href*=space]")[2].textContent;
-      data.postTime = doc.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span").textContent;
-      data.title = doc.querySelector(".tit.cl>h1").textContent;
+      let title = data.getTitle() + "-" + data.getWriter();
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+
+        </head>
+        <body>
+            <div id="savedContent" ">${data.getMainText()}</div>
+        </body>
+        </html>
+        `;
+      createAndDownloadFile(title + ".html", fullHtml, "text/html;charset=utf-8");
     }
-    assert_neq(mainpost, null, "Mainpost is null.");
-    assert(() => typeof data.title === "string" && data.title.length > 0, "Match title failed.");
-    let postTimeMatch = data.postTime.match(/20\d{2}-\d{1,2}-\d{1,2}/);
-    if (postTimeMatch) data.postTime = postTimeMatch[0];
-    observeCtxUpdate(mainpost, data);
-    return data;
   }
-  function novel_page_handle() {
-    let novel_data = extractNovelData(document, is_pc);
-    function download_cb() {
-      saveNovelData(novel_data);
-    }
-    let container;
-    let btn = document.createElement("a");
-    btn.innerText = "DL";
-    btn.style.display = "block";
-    btn.style.fontWeight = "bold";
-    btn.style.backgroundColor = "pink";
-    btn.style.color = "white";
-    btn.href = "javascript:void(0)";
-    btn.addEventListener("click", download_cb);
-    if (is_pc) {
-      container = document.createElement("li");
-      document.querySelector(".pls.favatar").lastElementChild.appendChild(container);
-    } else {
-      container = document.querySelector("#ainuo_quick_bot");
-      btn.classList.add("ainuo_quick_post");
-      container.removeChild(container.firstElementChild);
-    }
-    container.appendChild(btn);
-  }
-  function writer_page_handle() {
+  function writer_page_handle(is_pc2) {
     async function xhr_get(url) {
       const promise = new Promise((resolve, reject) => {
         let headers = {
-          // "referer": document.location.href,
-          // 'User-Agent': navigator.userAgent,
-          // "cookie": document.cookie,
+          "referer": document.location.href,
+          "User-Agent": navigator.userAgent,
+          "cookie": document.cookie,
           "Content-Type": "text/html;charset=utf-8",
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
           "accept-language": "en-CN,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,en-GB;q=0.6,en-US;q=0.5",
@@ -382,9 +502,11 @@
       btn.value = "下载";
       btn.addEventListener("click", async () => {
         let doc = await xhr_get(url);
-        let novel_data = extractNovelData(doc, is_pc);
+        let promise = extractNovelData(doc, is_pc2);
         if (is_paid(doc)) {
-          saveNovelData(novel_data);
+          promise.then((data) => {
+            saveNovelData(data);
+          });
         } else {
           btn.value = "未购买";
           btn.checked = true;
@@ -392,7 +514,7 @@
       });
       return btn;
     }
-    if (is_pc) {
+    if (is_pc2) {
       let table = document.querySelector("#delform tbody");
       for (let i = 1; i < table.children.length; ++i) {
         let th = table.children[i].querySelector("th");
@@ -430,21 +552,54 @@
     observer.observe(document.querySelector("#nv_forum"), { childList: true });
     do_filter();
   }
+  function novel_page_handle(is_pc2) {
+    var _a, _b;
+    translateDOM(document);
+    let btn = document.createElement("a");
+    btn.innerText = "DL";
+    btn.style.display = "block";
+    btn.style.fontWeight = "bold";
+    btn.style.backgroundColor = "pink";
+    btn.style.color = "white";
+    btn.href = "javascript:void(0)";
+    btn.addEventListener("click", () => {
+      if (is_paid(document)) {
+        let promise = extractNovelData(document, is_pc2);
+        promise.then(
+          (novel_data) => {
+            saveNovelData(novel_data);
+          }
+        );
+      } else {
+        alert("未购买");
+      }
+    });
+    let container;
+    if (is_pc2) {
+      container = document.createElement("li");
+      (_b = (_a = document.querySelector(".pls.favatar")) == null ? void 0 : _a.lastElementChild) == null ? void 0 : _b.appendChild(container);
+    } else {
+      container = document.querySelector("#ainuo_quick_bot");
+      btn.classList.add("ainuo_quick_post");
+      container.removeChild(container.firstElementChild);
+    }
+    container.appendChild(btn);
+  }
   let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
   log_time_cost();
   document.title = toSimplified(document.title);
   if (/mod=viewthread/.test(location.href)) {
     console.info("McseaAssist:Novel Page");
-    novel_page_handle();
+    novel_page_handle(is_pc);
   } else if (/mod=space/.test(location.href)) {
     console.info("McseaAssist:Writer Page");
-    writer_page_handle();
+    writer_page_handle(is_pc);
   } else if (/forum.php\/?$/.test(location.href) && /view=me/.test(location.href)) {
     console.info("McseaAssist:Main Page");
     main_page_handle();
   } else if (/^file/.test(location.href)) {
     console.info("McseaAssist:Other Page");
-    novel_page_handle();
+    novel_page_handle(is_pc);
   }
 
 })();

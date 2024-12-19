@@ -1,13 +1,12 @@
 
-//============================简繁转换START=================================
 
 import * as OpenCC from 'opencc-js';
 const converter = OpenCC.Converter({ from: 'tw', to: 'cn' });
-function toSimplified(text) {
+export function toSimplified(text) {
     return converter(text);
 }
 //功能：转换对象，使用递归，逐层剥到文本；
-function translateDOM(fobj = document.body, t2s = true) {
+export function translateDOM(fobj: Node = document.body, t2s = true) {
     var objs = typeof (fobj) == "object" ? fobj.childNodes : document.body.childNodes;
     for (let i = 0; i < objs.length; i++) {
         if (objs[i].nodeType === 3) {
@@ -17,5 +16,3 @@ function translateDOM(fobj = document.body, t2s = true) {
         }
     }
 }
-
-//============================简繁转换END=================================
