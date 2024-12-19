@@ -1,15 +1,12 @@
 
 import { toSimplified } from "./utils/translate.ts"
-import { log_time_cost } from './utils/assert.js';
 
 import { writer_page_handle } from "./handles/writer.js"
 import { main_page_handle } from "./handles/mainpage.js";
 import { novel_page_handle } from "./handles/novel.js"
-import { Config } from "./utils/config.ts"
 
 
 let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
-log_time_cost();
 document.title = toSimplified(document.title);
 if (/mod=viewthread/.test(location.href)) {
     console.info("McseaAssist:Novel Page");
