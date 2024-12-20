@@ -1,8 +1,22 @@
 import { GM_registerMenuCommand, GM_unregisterMenuCommand } from "vite-plugin-monkey/dist/client"
 
 class McseaConfig {
-    filterCite: boolean = false
-    downloadType: "auto" | "plain" | "rich" = "auto"
+    filterCite: boolean = true
+    downloadType: "auto" | "plain" | "html" | "makedown" = "auto"
+    selector = {
+        pc: {
+            mainpost: "td[id^=postmessage_]",
+            writer: "a.xw1[href*=space]",
+            postTime: "em[id^=authorposton]",
+            title: "#thread_subject"
+        },
+        mb: {
+            mainpost: "#ainuoloadmore .message",
+            writer: "#ainuoloadmore .info a[href*=space]",
+            postTime: "#ainuoloadmore div.info.cl > div > span",
+            title: ".tit.cl>h1"
+        }
+    }
 }
 export let config = new McseaConfig();
 
@@ -27,10 +41,13 @@ let menuitems = Array.of(
         config.downloadType = "auto"
     }),
     new MenuItem(() => `纯文本下载格式 ${config.downloadType === "plain" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "auto"
+        config.downloadType = "plain"
     }),
-    new MenuItem(() => `HTML下载格式 ${config.downloadType === "rich" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "auto"
+    new MenuItem(() => `HTML下载格式 ${config.downloadType === "html" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+        config.downloadType = "html"
+    }),
+    new MenuItem(() => `MD下载格式 ${config.downloadType === "makedown" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+        config.downloadType = "makedown"
     }),
 );
 

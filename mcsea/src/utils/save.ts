@@ -26,10 +26,12 @@ export function saveNovelData(data: NovelData) {
         // 释放内存
         URL.revokeObjectURL(url);
     }
-    if (data.isPlainText) {
-        createAndDownloadFile(data.getTitle() + "-" + data.getWriter() + ".txt", data.getMainText());
-    } else {
-        let title = data.getTitle() + "-" + data.getWriter()
+    let title = data.getTitle() + "-" + data.getWriter();
+    if (data.downloadType === "plain") {
+        createAndDownloadFile(title + ".txt", data.getMainText());
+    } else if (data.downloadType === "makedown") {
+        createAndDownloadFile(title + ".md", data.getMainText());
+    } else if (data.downloadType === "html") {
         const fullHtml = `
         <!DOCTYPE html>
         <html>

@@ -1,11 +1,17 @@
 import { saveNovelData } from "../utils/save";
 import { extractNovelData, is_paid } from "../extractor";
 import { translateDOM } from "../utils/translate";
+import { filterTrashChildren, observeCtxUpdate } from "../utils/purify";
+import { config } from "../utils/config";
 /**
  * 在小说阅读页面过滤乱码，追加下载按钮
  */
 export function novel_page_handle(is_pc: boolean) {
-    translateDOM(document);
+    let mainpost = document.querySelector(is_pc ? config.selector.pc.mainpost : config.selector.mb.mainpost) as HTMLElement;
+    observeCtxUpdate(mainpost, () => {
+        filterTrashChildren(mainpost);
+        translateDOM(mainpost);
+    })
     // 附加下载按钮
     let btn = document.createElement('a');
     btn.innerText = "DL"; btn.style.display = "block";
@@ -17,7 +23,7 @@ export function novel_page_handle(is_pc: boolean) {
                 novel_data => {
                     saveNovelData(novel_data);
                 }
-            );
+            ).catch((reason) => alert("dl fail." + reason));
         }
         else {
             alert("未购买");

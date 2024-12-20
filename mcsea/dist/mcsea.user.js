@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         mcsea
 // @namespace    https://mcseas.club/
-// @version      2024.12.20
+// @version      2024.12.20.2
 // @author       monkey
 // @description  prettify and download novel on mcsea
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
@@ -204,30 +204,26 @@
       }
     }
   }
-  function assert(checkfunc, msg = "") {
-    if (!checkfunc()) {
-      window.alert(msg);
-      throw new EvalError("Assert Failed." + msg);
-    }
-  }
-  function assert_neq(obj, tgt, msg = "") {
-    assert(() => obj !== tgt, msg);
-  }
-  let _first_log_timestamp = null;
-  function log_time_cost() {
-    if (_first_log_timestamp == null) {
-      _first_log_timestamp = (/* @__PURE__ */ new Date()).getTime();
-    } else {
-      var cur = (/* @__PURE__ */ new Date()).getTime();
-      console.log("Time cost(ms):" + (cur - _first_log_timestamp));
-    }
-  }
   var _GM_registerMenuCommand = /* @__PURE__ */ (() => typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0)();
   var _GM_unregisterMenuCommand = /* @__PURE__ */ (() => typeof GM_unregisterMenuCommand != "undefined" ? GM_unregisterMenuCommand : void 0)();
   class McseaConfig {
     constructor() {
-      this.filterCite = false;
+      this.filterCite = true;
       this.downloadType = "auto";
+      this.selector = {
+        pc: {
+          mainpost: "td[id^=postmessage_]",
+          writer: "a.xw1[href*=space]",
+          postTime: "em[id^=authorposton]",
+          title: "#thread_subject"
+        },
+        mb: {
+          mainpost: "#ainuoloadmore .message",
+          writer: "#ainuoloadmore .info a[href*=space]",
+          postTime: "#ainuoloadmore div.info.cl > div > span",
+          title: ".tit.cl>h1"
+        }
+      };
     }
   }
   let config = new McseaConfig();
@@ -248,10 +244,13 @@
       config.downloadType = "auto";
     }),
     new MenuItem(() => `纯文本下载格式 ${config.downloadType === "plain" ? "✔️" : "⭕"}`, (item) => {
-      config.downloadType = "auto";
+      config.downloadType = "plain";
     }),
-    new MenuItem(() => `HTML下载格式 ${config.downloadType === "rich" ? "✔️" : "⭕"}`, (item) => {
-      config.downloadType = "auto";
+    new MenuItem(() => `HTML下载格式 ${config.downloadType === "html" ? "✔️" : "⭕"}`, (item) => {
+      config.downloadType = "html";
+    }),
+    new MenuItem(() => `MD下载格式 ${config.downloadType === "makedown" ? "✔️" : "⭕"}`, (item) => {
+      config.downloadType = "makedown";
     })
   );
   function update() {
@@ -262,34 +261,19 @@
     }
   }
   update();
-  class NovelData {
-    constructor() {
-      this.isPlainText = true;
-      this.title = "";
-      this.writer = "";
-      this.postTime = "";
-      this.context = "";
-    }
-    getWriter() {
-      return this.writer;
-    }
-    getTitle() {
-      return this.title;
-    }
-    getMainText() {
-      var text = this.getTitle();
-      if (this.postTime) {
-        text += "\nposton " + this.postTime;
-      }
-      text += this.context;
-      return text;
+  function assert(checkfunc, msg = "") {
+    if (!checkfunc()) {
+      window.alert(msg);
+      throw new EvalError("Assert Failed." + msg);
     }
   }
-  function is_paid(doc = document) {
-    return doc.querySelector("a.y.viewpay") === null;
+  function assert_neq(obj, tgt, msg = "") {
+    assert(() => obj !== tgt, msg);
   }
-  function prettify(mainText) {
-    return mainText;
+  let _first_log_timestamp = (/* @__PURE__ */ new Date()).getTime();
+  function log_time_cost() {
+    var cur = (/* @__PURE__ */ new Date()).getTime();
+    console.log("Time cost(ms):" + (cur - _first_log_timestamp));
   }
   function filterTrashChildren(targetNode, class_names = "") {
     assert_neq(targetNode, null, "filter fail.targetNode is null.");
@@ -322,6 +306,52 @@
     iter(targetNode);
     return filtered_trash_children_cnt;
   }
+  function observeCtxUpdate(targetNode, func) {
+    let update_cnt = 0;
+    function do_update(mutationsList, observer2) {
+      if (update_cnt === 0 || filterTrashChildren(targetNode)) {
+        observer2.disconnect();
+        func();
+        ++update_cnt;
+        console.info("Ctx Update times:" + update_cnt);
+        log_time_cost();
+        observer2.observe(targetNode, config2);
+      }
+    }
+    const observer = new MutationObserver(do_update);
+    const config2 = { attributes: true, childList: true, subtree: true };
+    do_update(null, observer);
+  }
+  class NovelData {
+    constructor() {
+      this.downloadType = config.downloadType;
+      this.title = "";
+      this.writer = "";
+      this.postTime = "";
+      this.context = "";
+    }
+    getWriter() {
+      return this.writer;
+    }
+    getTitle() {
+      return this.title;
+    }
+    getMainText() {
+      var text = this.getTitle();
+      if (this.postTime) {
+        text += "\nposton " + this.postTime;
+      }
+      text += this.context;
+      return text;
+    }
+  }
+  function is_paid(doc = document) {
+    return doc.querySelector("a.y.viewpay") === null;
+  }
+  function prettify(mainText) {
+    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s+([\u4e00-\u9fa5—])/g, "$1$2");
+    return mainText;
+  }
   async function getImageByFetch(img) {
     const response = await fetch(img.src);
     const blob = await response.blob();
@@ -340,7 +370,20 @@
   }
   const getImage = getImageByFetch;
   const imageCache = /* @__PURE__ */ new Map();
-  async function extractRichContext(mainpost) {
+  async function extractRichContext(mainpost, downloadType = "makedown") {
+    let LINE_FEED = "\\n";
+    let getImgTag;
+    if (downloadType === "html") {
+      LINE_FEED = "<br>";
+      getImgTag = (base64) => {
+        return LINE_FEED + `<img src="${base64}">` + LINE_FEED;
+      };
+    } else if (downloadType === "makedown") {
+      LINE_FEED = "\n";
+      getImgTag = (base64) => {
+        return LINE_FEED + `![](${base64})` + LINE_FEED;
+      };
+    }
     let imagePromises = Array();
     function fetchImages(root) {
       for (let node of root.children) {
@@ -369,13 +412,13 @@
         } else if (node.nodeType === Node.ELEMENT_NODE) {
           let tagName = node.tagName.toLowerCase();
           if (tagName === "p") {
-            context2 += "<br>" + iter(node) + "<br>";
+            context2 += LINE_FEED + iter(node) + LINE_FEED;
           } else if (tagName === "br") {
-            context2 += "<br>";
+            context2 += LINE_FEED;
           } else if (tagName === "img") {
             const base64 = imageCache.get(node.id);
             if (base64) {
-              context2 += `<img src="${base64}">`;
+              context2 += getImgTag(base64);
             } else {
               console.log(`iter Error.${node.id} not found`);
             }
@@ -388,36 +431,53 @@
     }
     fetchImages(mainpost);
     await Promise.all(imagePromises);
-    console.log(imageCache.keys());
     let context = iter(mainpost);
+    if (downloadType === "makedown") {
+      context = prettify(context);
+    }
     return context;
   }
   async function extractNovelContext(mainpost, data = new NovelData()) {
     filterTrashChildren(mainpost);
     let imgs = mainpost.querySelectorAll("img");
-    if (config.downloadType === "auto" && imgs.length == 0 || config.downloadType === "plain") {
+    function extractPlainContext() {
+      data.downloadType = "plain";
       data.context = mainpost.textContent;
       data.context = prettify(data.context);
-    } else {
-      data.isPlainText = false;
-      data.context = await extractRichContext(mainpost);
+    }
+    if (imgs.length == 0) {
+      extractPlainContext();
+    } else if (config.downloadType === "plain") {
+      extractPlainContext();
+    } else if (config.downloadType === "auto") {
+      data.downloadType = "makedown";
+      data.context = await extractRichContext(mainpost, data.downloadType);
+    } else if (config.downloadType === "html") {
+      data.downloadType = config.downloadType;
+      data.context = await extractRichContext(mainpost, config.downloadType);
+    } else if (config.downloadType === "makedown") {
+      data.downloadType = config.downloadType;
+      data.context = await extractRichContext(mainpost, config.downloadType);
     }
     return data;
   }
   async function extractNovelData(doc, is_pc2) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     let mainpost;
     let writer, postTime, title;
     if (is_pc2) {
-      mainpost = doc.querySelector("td[id^=postmessage_]");
-      writer = (_a = doc.querySelector("a.xw1[href*=space]")) == null ? void 0 : _a.textContent;
-      postTime = (_b = doc.querySelector("em[id^=authorposton]")) == null ? void 0 : _b.textContent;
-      title = (_c = doc.querySelector("#thread_subject")) == null ? void 0 : _c.textContent;
+      mainpost = doc.querySelector(config.selector.pc.mainpost);
+      writer = (_a = doc.querySelector(config.selector.pc.writer)) == null ? void 0 : _a.textContent;
+      postTime = (_b = doc.querySelector(config.selector.pc.postTime)) == null ? void 0 : _b.textContent;
+      title = (_c = doc.querySelector(config.selector.pc.title)) == null ? void 0 : _c.textContent;
     } else {
-      mainpost = doc.querySelector("#ainuoloadmore .message");
-      writer = doc.querySelectorAll("a[href*=space]")[2].textContent;
-      postTime = (_d = doc.querySelector("div.ainuo_avatar.cl > div.info.cl > div > span")) == null ? void 0 : _d.textContent;
-      title = (_e = doc.querySelector(".tit.cl>h1")) == null ? void 0 : _e.textContent;
+      mainpost = doc.querySelector(config.selector.mb.mainpost);
+      writer = (_d = doc.querySelector(config.selector.mb.writer)) == null ? void 0 : _d.textContent;
+      postTime = (_e = doc.querySelector(config.selector.mb.postTime)) == null ? void 0 : _e.textContent;
+      title = (_f = doc.querySelector(config.selector.mb.title)) == null ? void 0 : _f.textContent;
+    }
+    if (mainpost === null) {
+      throw new Error("extract mainpost fail.");
     }
     if (writer === null) {
       throw new Error("extract writer fail.");
@@ -427,9 +487,6 @@
     }
     if (title === null) {
       throw new Error("extract title fail.");
-    }
-    if (!(typeof (mainpost == null ? void 0 : mainpost.textContent) === "string" && mainpost.textContent.length > 0)) {
-      throw new Error("extract mainpost fail.");
     }
     return extractNovelContext(mainpost).then((data) => {
       data.title = toSimplified(title), data.writer = writer, data.postTime = postTime;
@@ -448,10 +505,12 @@
       a.click();
       URL.revokeObjectURL(url);
     }
-    if (data.isPlainText) {
-      createAndDownloadFile(data.getTitle() + "-" + data.getWriter() + ".txt", data.getMainText());
-    } else {
-      let title = data.getTitle() + "-" + data.getWriter();
+    let title = data.getTitle() + "-" + data.getWriter();
+    if (data.downloadType === "plain") {
+      createAndDownloadFile(title + ".txt", data.getMainText());
+    } else if (data.downloadType === "makedown") {
+      createAndDownloadFile(title + ".md", data.getMainText());
+    } else if (data.downloadType === "html") {
       const fullHtml = `
         <!DOCTYPE html>
         <html>
@@ -554,7 +613,11 @@
   }
   function novel_page_handle(is_pc2) {
     var _a, _b;
-    translateDOM(document);
+    let mainpost = document.querySelector(is_pc2 ? config.selector.pc.mainpost : config.selector.mb.mainpost);
+    observeCtxUpdate(mainpost, () => {
+      filterTrashChildren(mainpost);
+      translateDOM(mainpost);
+    });
     let btn = document.createElement("a");
     btn.innerText = "DL";
     btn.style.display = "block";
@@ -569,7 +632,7 @@
           (novel_data) => {
             saveNovelData(novel_data);
           }
-        );
+        ).catch((reason) => alert("dl fail." + reason));
       } else {
         alert("未购买");
       }
@@ -586,7 +649,6 @@
     container.appendChild(btn);
   }
   let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
-  log_time_cost();
   document.title = toSimplified(document.title);
   if (/mod=viewthread/.test(location.href)) {
     console.info("McseaAssist:Novel Page");
