@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         mcsea
 // @namespace    https://mcseas.club/
-// @version      2024.12.20.2
+// @version      2024.12.22
 // @author       monkey
 // @description  prettify and download novel on mcsea
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
@@ -349,7 +349,7 @@
     return doc.querySelector("a.y.viewpay") === null;
   }
   function prettify(mainText) {
-    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s+([\u4e00-\u9fa5—])/g, "$1$2");
+    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s*\n+\s*([\u4e00-\u9fa5—])/g, "$1$2");
     return mainText;
   }
   async function getImageByFetch(img) {

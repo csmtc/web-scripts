@@ -44,7 +44,7 @@ function prettify(mainText: string): string {
     // mainText = mainText.replace(/\n\s+/g, "\n\n\t");
     // 移除连续中文之间的换行 
 
-    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s+([\u4e00-\u9fa5—])/g, "$1$2");
+    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s*\n+\s*([\u4e00-\u9fa5—])/g, "$1$2");
     // console.log(mainText);
     return mainText
 }
@@ -171,7 +171,13 @@ async function extractRichContext(mainpost: HTMLElement, downloadType: "makedown
 
 
 
-
+/**
+ * 若内容为纯文本则下载为纯文本
+ * 其他情况按照Config的配置下载
+ * @param mainpost 
+ * @param data 
+ * @returns 
+ */
 async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new NovelData()): Promise<NovelData> {
     filterTrashChildren(mainpost);
     let imgs = mainpost.querySelectorAll('img');
@@ -205,7 +211,7 @@ async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new 
 
 
 /**
- * 从指定Document中抓取小说数据
+ * 从指定Document中抓取小说数据，存储格式由Config指定
  * @param {Document} doc 
  * @param {boolean} is_pc 
  * @returns {NovelData} data
@@ -242,7 +248,6 @@ export async function extractNovelData(doc: Document, is_pc: boolean): Promise<N
         data.title = toSimplified(title), data.writer = writer as string, data.postTime = postTime as string;
         let postTimeMatch = data.postTime.match(/20\d{2}-\d{1,2}-\d{1,2}/);
         if (postTimeMatch) data.postTime = postTimeMatch[0];
-        // observeCtxUpdate(mainpost, data);
         return data;
     });
 }
