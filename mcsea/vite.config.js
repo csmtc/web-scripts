@@ -12,8 +12,10 @@ export default defineConfig({
         icon: 'https://www.google.com/s2/favicons?sz=64&domain=mcseas.club',
         match: ['https://mcseas.club/*'],
         connect: ['https://mcseas.club/*'],
-        updateURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js',
-        downloadURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js'
+        updateURL: 'https://atcra.top:50000/web-script/mcsea.user.js',
+        downloadURL: 'https://atcra.top:50000/web-script/mcsea.user.js'
+        // updateURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js',
+        // downloadURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js'
       },
       // server: { mountGmApi: true },
     }),
