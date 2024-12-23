@@ -9,6 +9,7 @@ export class NovelData {
     writer: string = "";
     postTime: string = "";
     context = "";
+    assets = new Map<string, Blob>(); // filename->blob
     getWriter() {
         return this.writer;
     }
@@ -42,9 +43,12 @@ export function is_paid(doc = document) {
 function prettify(mainText: string): string {
     // 首行缩进2格，段落间空一行
     // mainText = mainText.replace(/\n\s+/g, "\n\n\t");
-    // 移除连续中文之间的换行 
 
-    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s*\n+\s*([\u4e00-\u9fa5—])/g, "$1$2");
+    // 移除连续中文之间的换行
+    mainText = mainText.replace(/([\u4e00-\u9fa5，—])\s*\n+\s*([\u4e00-\u9fa5—])/, "$1$2");
+    // 移除多个连续换行
+    mainText = mainText.replace(/(\n\s*){2,}/g, "\n\n");
+
     // console.log(mainText);
     return mainText
 }
@@ -55,121 +59,127 @@ function prettify(mainText: string): string {
  * @param {HTMLImageElement}img 
  * @returns {string} base64 编码后的图片
  */
-async function getImageByRender(img: HTMLImageElement): Promise<string> {
+async function getImageByRender(img: HTMLImageElement): Promise<Blob> {
     (img as HTMLImageElement).crossOrigin = 'anonymous';
     const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext("2d");
     ctx?.drawImage(img, 0, 0, img.width, img.height);
-    const dataURL = canvas.toDataURL();
     // 将画布内容转换为 Base64 编码的字符串
     return new Promise((resolve, reject) => {
-        resolve(dataURL);
+        canvas.toBlob(blob => {
+            if (blob != null) {
+                resolve(blob);
+            } else {
+                reject("image download fail");
+            }
+        }, "image/png")
     })
 }
 /**
  *  将在线img对象中的图像内容保存为二进制编码，返回新的img对象的HTML
  * @param {HTMLImageElement}img 
- * @returns {string} base64 编码后的图片
+ * @returns {Blob} 图片的二进制数据
  */
-async function getImageByFetch(img: HTMLImageElement): Promise<string> {
-    const response = await fetch(img.src);
+async function getImageByFetch(img: HTMLImageElement, max_retry_times = 3): Promise<Blob> {
+    let retrycnt = 0;
+    let response: Response = await fetch(img.src);
+    while (!response.ok && ++retrycnt <= max_retry_times) {
+        console.log(`fetch ${img.src} fail,retry times:${retrycnt}.`);
+        response = await fetch(img.src);
+    }
+    if (retrycnt > max_retry_times) {
+        throw new Error(`Fetch ${img.src} fail.`)
+    }
     const blob = await response.blob();
-
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            if (reader.result)
-                resolve(reader.result?.toString());
-            else
-                reject("image download fail");
-        };
-        reader.onerror = (error) => reject("image download fail" + error);
-        reader.readAsDataURL(blob);
-    });
+    return blob;
 }
 
 
+
 const getImage = getImageByFetch
-const imageCache = new Map<string, string>(); // Img.id→base64Data
-async function extractRichContext(mainpost: HTMLElement, downloadType: "makedown" | "html" = "makedown"): Promise<string> {
+const imageCache = new Map<string, Blob>(); // Img.id→base64Data
 
-    let LINE_FEED: string = "\\n";
-    let getImgTag: (base64: string) => string
-    if (downloadType === "html") {
-        LINE_FEED = "<br>"
-        getImgTag = (base64) => {
-            return LINE_FEED + `<img src="${base64}">` + LINE_FEED
-        }
-    }
-    else if (downloadType === "makedown") {
-        LINE_FEED = "\n"
-        getImgTag = (base64) => {
-            return LINE_FEED + `![](${base64})` + LINE_FEED
-        }
-    }
-
+/**
+ * 
+ * @param root 提取root后代结点中所有的图片
+ */
+async function fetchImages(root: Element) {
     let imagePromises = Array<Promise<void>>();
-    function fetchImages(root: Element) {
+    function fetchImages_(root: Element) {
         for (let node of root.children) {
             if (node.nodeType === Node.ELEMENT_NODE) {
                 if ('img' === node.tagName.toLowerCase()) {
                     if (imageCache.has((node as HTMLImageElement).id))
                         continue;
-                    let p = getImage(node as HTMLImageElement).then((base64) => {
+                    let p = getImage(node as HTMLImageElement).then((imgBlob) => {
                         imageCache.set(
-                            (node as HTMLImageElement).id, base64
+                            (node as HTMLImageElement).id, imgBlob
                         )
                     });
                     imagePromises.push(p);
                 } else {
-                    fetchImages(node);
+                    fetchImages_(node);
                 }
             }
         }
     }
-
-    function iter(root: Node): string {
-        let context = "";
-        for (let node of root.childNodes) {
-            // console.log(node);
-            if (node.nodeType === Node.TEXT_NODE) {
-                context += node.textContent;
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                let tagName = (node as HTMLElement).tagName.toLowerCase();
-                if (tagName === "p") {
-                    context += LINE_FEED + iter(node) + LINE_FEED;
-                } else if (tagName === "br") {
-                    context += LINE_FEED;
-                } else if (tagName === "img") {
-                    const base64 = imageCache.get((node as HTMLElement).id);
-                    if (base64) {
-                        context += getImgTag(base64);
-                    } else {
-                        console.log(`iter Error.${(node as HTMLElement).id} not found`);
-                    }
-                } else {
-                    context += iter(node as HTMLElement);
-                }
-            }
-        }
-        return context;
-    }
-
-    fetchImages(mainpost);
+    fetchImages_(root);
     await Promise.all(imagePromises);
-    // console.log(imageCache.keys());
-
-    let context = iter(mainpost);
-    if (downloadType === "makedown") {
-        context = prettify(context)
-    }
-    // console.log(context);
-    return context;
 }
 
+function getBase64(img: Blob) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        if (reader.result)
+            return reader.result?.toString();
+        else
+            throw new Error("image download fail");
+    };
+    reader.onerror = (error) => {
+        throw new Error("image download fail" + error);
+    };
+    reader.readAsDataURL(img);
+}
+function getExtensionFromMimeType(mimeType: string): string {
+    const mimeToExt = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+        "image/bmp": ".bmp",
+        "image/svg+xml": ".svg",
+    };
+    return mimeToExt[mimeType] || ".png";
+}
 
+function extractRichContext(root: Node, getImgTag: (img: Blob) => string, LINE_FEED: string = "\n"): string {
+    let context = "";
+    for (let node of root.childNodes) {
+        // console.log(node);
+        if (node.nodeType === Node.TEXT_NODE) {
+            context += node.textContent;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            let tagName = (node as HTMLElement).tagName.toLowerCase();
+            if (tagName === "p") {
+                context += LINE_FEED + extractRichContext(node, getImgTag, LINE_FEED) + LINE_FEED;
+            } else if (tagName === "br") {
+                context += LINE_FEED;
+            } else if (tagName === "img") {
+                const img = imageCache.get((node as HTMLElement).id);
+                if (img) {
+                    context += getImgTag(img);
+                } else {
+                    console.log(`iter Error.${(node as HTMLElement).id} not found`);
+                }
+            } else {
+                context += extractRichContext(node as HTMLElement, getImgTag, LINE_FEED);
+            }
+        }
+    }
+    return context;
+}
 
 /**
  * 若内容为纯文本则下载为纯文本
@@ -191,18 +201,39 @@ async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new 
     } else if (config.downloadType === "plain") {
         // 提取纯文本内容
         extractPlainContext();
-    } else if (config.downloadType === "auto") {
+    } else {
         // 富文本内容
-        data.downloadType = "makedown";
-        data.context = await extractRichContext(mainpost, data.downloadType);
-    } else if (config.downloadType === "html") {
-        // 富文本内容
-        data.downloadType = config.downloadType;
-        data.context = await extractRichContext(mainpost, config.downloadType);
-    } else if (config.downloadType === "makedown") {
-        // 富文本内容
-        data.downloadType = config.downloadType;
-        data.context = await extractRichContext(mainpost, config.downloadType);
+        let LINE_FEED: string = "\n";
+        await fetchImages(mainpost);
+
+        if (config.downloadType === "auto" || config.downloadType === "zip") {
+            data.downloadType = "zip";
+            let imgIDX = 0;
+            let getImgTag = (img: Blob) => {
+                let filename = ++imgIDX + getExtensionFromMimeType(img.type);
+                data.assets.set(filename, img);
+                console.log(`$cache:{filename},mime=${img.type}`);
+                return LINE_FEED + `![](./assets/${filename})` + LINE_FEED;
+            }
+            data.context = extractRichContext(mainpost, getImgTag, LINE_FEED);
+            data.context = prettify(data.context);
+        } else if (config.downloadType === "makedown") {
+            data.downloadType = "makedown";
+            let getImgTag = (img: Blob) => {
+                const base64 = getBase64(img);
+                return LINE_FEED + `![](${base64})` + LINE_FEED
+            }
+            data.context = extractRichContext(mainpost, getImgTag, LINE_FEED);
+            data.context = prettify(data.context);
+        } else if (config.downloadType === "html") {
+            data.downloadType = "html";
+            LINE_FEED = "<br>";
+            let getImgTag = (img: Blob) => {
+                const base64 = getBase64(img);
+                return LINE_FEED + `<img src="${base64}">` + LINE_FEED
+            }
+            data.context = extractRichContext(mainpost, getImgTag, LINE_FEED);
+        }
     }
     return data;
 }

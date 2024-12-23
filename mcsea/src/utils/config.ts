@@ -2,7 +2,7 @@ import { GM_registerMenuCommand, GM_unregisterMenuCommand } from "vite-plugin-mo
 
 class McseaConfig {
     filterCite: boolean = true
-    downloadType: "auto" | "plain" | "html" | "makedown" = "auto"
+    downloadType: "auto" | "plain" | "zip" | "makedown" | "html" = "auto"
     selector = {
         pc: {
             mainpost: "td[id^=postmessage_]",
@@ -43,10 +43,10 @@ let menuitems = Array.of(
     new MenuItem(() => `纯文本下载格式 ${config.downloadType === "plain" ? "✔️" : "⭕"}`, (item: MenuItem) => {
         config.downloadType = "plain"
     }),
-    new MenuItem(() => `HTML下载格式 ${config.downloadType === "html" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "html"
+    new MenuItem(() => `MD+图ZIP格式 ${config.downloadType === "zip" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+        config.downloadType = "zip"
     }),
-    new MenuItem(() => `MD下载格式 ${config.downloadType === "makedown" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+    new MenuItem(() => `内嵌MD下载格式 ${config.downloadType === "makedown" ? "✔️" : "⭕"}`, (item: MenuItem) => {
         config.downloadType = "makedown"
     }),
 );
@@ -57,7 +57,7 @@ function update() {
     for (let menu of menuitems) {
         if (menu.command_id) GM_unregisterMenuCommand(menu.command_id);
         menu.command_id = GM_registerMenuCommand(menu.cal_title(), menu.callback);
-        console.log(`config:${menu.cal_title}`);
+        // console.log(`config:${menu.cal_title}`);
     }
 }
 

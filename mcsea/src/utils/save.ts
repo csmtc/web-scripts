@@ -1,6 +1,9 @@
 
 import { NovelData } from "../extractor";
 
+import JSZip from 'jszip';
+
+
 /**
  * 
  * @param {NovelData} data 
@@ -31,6 +34,17 @@ export function saveNovelData(data: NovelData) {
         createAndDownloadFile(title + ".txt", data.getMainText());
     } else if (data.downloadType === "makedown") {
         createAndDownloadFile(title + ".md", data.getMainText());
+    } else if (data.downloadType === "zip") {
+        const zip = new JSZip();
+        zip.file(title + ".md", data.getMainText());
+        zip.file(title + ".txt", data.getMainText().replace(/\s*!\[\]\(.*\)\s*/g, ""));
+        const folder = zip.folder("assets") as JSZip;
+        data.assets.forEach((img, name) => {
+            folder.file(name, img);
+        })
+        zip.generateAsync({ type: "blob" }).then(function (content) {
+            createAndDownloadFile(title + ".zip", content, "blob");
+        });
     } else if (data.downloadType === "html") {
         const fullHtml = `
         <!DOCTYPE html>
