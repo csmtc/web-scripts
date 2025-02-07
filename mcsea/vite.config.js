@@ -3,21 +3,22 @@ import monkey from 'vite-plugin-monkey';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    monkey({
-      entry: 'src/main.ts',
-      userscript: {
-        namespace: "https://mcseas.club/",
-        description: 'prettify and download novel on mcsea',
-        icon: 'https://www.google.com/s2/favicons?sz=64&domain=mcseas.club',
-        match: ['https://mcseas.club/*'],
-        connect: ['https://mcseas.club/*'],
-        updateURL: 'https://atcra.top:50000/web-script/mcsea.user.js',
-        downloadURL: 'https://atcra.top:50000/web-script/mcsea.user.js'
-        // updateURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js',
-        // downloadURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js'
-      },
-      // server: { mountGmApi: true },
-    }),
-  ],
+    plugins: [
+        monkey({
+            entry: 'src/main.ts',
+            userscript: {
+                name: "mcsea.assistor",
+                namespace: "https://mcseas.club/",
+                description: 'prettify and download novel on mcsea',
+                icon: 'https://www.google.com/s2/favicons?sz=64&domain=mcseas.club',
+                match: ['https://mcseas.club/*'],
+                connect: ['https://mcseas.club/*'],
+                // updateURL: 'https://atcra.top:50000/web-script/mcsea.user.js',
+                // downloadURL: 'https://atcra.top:50000/web-script/mcsea.user.js'
+                updateURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js',
+                downloadURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/mcsea/dist/mcsea.user.js'
+            },
+            // server: { mountGmApi: true },
+        }),
+    ],
 });

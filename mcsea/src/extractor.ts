@@ -3,7 +3,7 @@ import { config } from "./utils/config.ts";
 import { filterTrashChildren } from "./utils/purify.ts";
 
 export class NovelData {
-    downloadType = config.downloadType;
+    downloadType = config.richContextType;
 
     title = "";
     writer: string = "";
@@ -198,7 +198,7 @@ async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new 
     }
     if (imgs.length == 0) {
         extractPlainContext();
-    } else if (config.downloadType === "plain") {
+    } else if (config.richContextType === "plain") {
         // 提取纯文本内容
         extractPlainContext();
     } else {
@@ -206,7 +206,7 @@ async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new 
         let LINE_FEED: string = "\n";
         await fetchImages(mainpost);
 
-        if (config.downloadType === "auto" || config.downloadType === "zip") {
+        if (config.richContextType === "zip") {
             data.downloadType = "zip";
             let imgIDX = 0;
             let getImgTag = (img: Blob) => {
@@ -217,7 +217,7 @@ async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new 
             }
             data.context = extractRichContext(mainpost, getImgTag, LINE_FEED);
             data.context = prettify(data.context);
-        } else if (config.downloadType === "makedown") {
+        } else if (config.richContextType === "makedown") {
             data.downloadType = "makedown";
             let getImgTag = (img: Blob) => {
                 const base64 = getBase64(img);
@@ -225,7 +225,7 @@ async function extractNovelContext(mainpost: HTMLElement, data: NovelData = new 
             }
             data.context = extractRichContext(mainpost, getImgTag, LINE_FEED);
             data.context = prettify(data.context);
-        } else if (config.downloadType === "html") {
+        } else if (config.richContextType === "html") {
             data.downloadType = "html";
             LINE_FEED = "<br>";
             let getImgTag = (img: Blob) => {

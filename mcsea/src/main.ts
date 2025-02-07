@@ -4,6 +4,7 @@ import { toSimplified } from "./utils/translate.ts"
 import { writer_page_handle } from "./handles/writer.js"
 import { main_page_handle } from "./handles/mainpage.js";
 import { novel_page_handle } from "./handles/novel.js"
+import { other_page_handle } from "./handles/otherpages.ts";
 
 
 let is_pc = !/Mobi|Android|iPhone/i.test(navigator.userAgent);
@@ -21,6 +22,5 @@ else if (/forum.php\/?$/.test(location.href) && /view=me/.test(location.href)) {
 }
 else if (/^file/.test(location.href)) {
     console.info("McseaAssist:Other Page");
-    novel_page_handle(is_pc);
-    // writer_page_handle()
+    other_page_handle();
 }

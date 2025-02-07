@@ -1,8 +1,8 @@
-import { GM_registerMenuCommand, GM_unregisterMenuCommand } from "vite-plugin-monkey/dist/client"
+import { GM_registerMenuCommand, GM_unregisterMenuCommand, GM_getValue, GM_setValue } from "vite-plugin-monkey/dist/client"
 
 class McseaConfig {
-    filterCite: boolean = true
-    downloadType: "auto" | "plain" | "zip" | "makedown" | "html" = "auto"
+    filterCite: boolean = GM_getValue("filterCite", true)
+    richContextType: "plain" | "zip" | "makedown" | "html" = GM_getValue("richContextType", "zip")
     selector = {
         pc: {
             mainpost: "td[id^=postmessage_]",
@@ -36,18 +36,19 @@ class MenuItem {
 let menuitems = Array.of(
     new MenuItem(() => `过滤免费引文 ${config.filterCite ? "✔️" : "⭕"}`, (item: MenuItem) => {
         config.filterCite = !config.filterCite;
+        GM_setValue("filterCite", config.filterCite);
     }),
-    new MenuItem(() => `自动检测下载格式 ${config.downloadType === "auto" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "auto"
+    new MenuItem(() => `纯文本下载格式 ${config.richContextType === "plain" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+        config.richContextType = "plain"
+        GM_setValue("richContextType", config.richContextType)
     }),
-    new MenuItem(() => `纯文本下载格式 ${config.downloadType === "plain" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "plain"
+    new MenuItem(() => `MD+图ZIP格式 ${config.richContextType === "zip" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+        config.richContextType = "zip"
+        GM_setValue("richContextType", config.richContextType)
     }),
-    new MenuItem(() => `MD+图ZIP格式 ${config.downloadType === "zip" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "zip"
-    }),
-    new MenuItem(() => `内嵌MD下载格式 ${config.downloadType === "makedown" ? "✔️" : "⭕"}`, (item: MenuItem) => {
-        config.downloadType = "makedown"
+    new MenuItem(() => `内嵌MD下载格式 ${config.richContextType === "makedown" ? "✔️" : "⭕"}`, (item: MenuItem) => {
+        config.richContextType = "makedown"
+        GM_setValue("richContextType", config.richContextType)
     }),
 );
 
