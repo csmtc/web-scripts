@@ -9,8 +9,11 @@ import { config } from "./config";
 * @returns {Number} filtered_cnt 过滤的子结点个数
 */
 export function filterTrashChildren(targetNode: Element, class_names = ""): number {
-    assert_neq(targetNode, null, "filter fail.targetNode is null.");
-    assert_neq(targetNode.children, null, "filter fail.No children belong to targetNode.");
+    if (targetNode === null || targetNode.children === null) {
+        return -1;
+    }
+    // assert_neq(targetNode, null, "filter fail.targetNode is null.");
+    // assert_neq(targetNode.children, null, "filter fail.No children belong to targetNode.");
     // style:display:none
     // font.jammer
     class_names += "jammer|pstatus|blockcode";

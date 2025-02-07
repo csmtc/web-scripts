@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         mcsea.assistor
 // @namespace    https://mcseas.club/
-// @version      2025.2.7
+// @version      2025.2.7.1
 // @author       monkey
 // @description  prettify and download novel on mcsea
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=mcseas.club
@@ -265,23 +265,15 @@
     }
   }
   update();
-  function assert(checkfunc, msg = "") {
-    if (!checkfunc()) {
-      window.alert(msg);
-      throw new EvalError("Assert Failed." + msg);
-    }
-  }
-  function assert_neq(obj, tgt, msg = "") {
-    assert(() => obj !== tgt, msg);
-  }
   let _first_log_timestamp = (/* @__PURE__ */ new Date()).getTime();
   function log_time_cost() {
     var cur = (/* @__PURE__ */ new Date()).getTime();
     console.log("Time cost(ms):" + (cur - _first_log_timestamp));
   }
   function filterTrashChildren(targetNode, class_names = "") {
-    assert_neq(targetNode, null, "filter fail.targetNode is null.");
-    assert_neq(targetNode.children, null, "filter fail.No children belong to targetNode.");
+    if (targetNode === null || targetNode.children === null) {
+      return -1;
+    }
     class_names += "jammer|pstatus|blockcode";
     if (config.filterCite) {
       class_names += "|quote";
