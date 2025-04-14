@@ -1,0 +1,19 @@
+{
+    "name": "cool18",
+    "private": true,
+    "version": "2025.4.14.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build&& distribute.ps1",
+        "preview": "vite preview"
+    },
+    "devDependencies": {
+        "vite": "^6.2.5",
+        "vite-plugin-monkey": "^5.0.3"
+    },
+    "dependencies": {
+        "cool18": "file:",
+        "jszip": "^3.10.1"
+    }
+}

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "mcsea": "file:",
+    "mcsea.translator": "file:",
     "node-gyp": "^11.0.0",
     "opencc-js": "^1.0.5"
   }
