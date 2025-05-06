@@ -1,14 +1,16 @@
-export var hooks = {
+export const hooks = {
     novelPage: {
         mb: {
-            posts: "div[id^=\"postmessage\"]",
+            posts: "th[id^=\"postmessage\"]",
             title: "title",
             toolBar: "#bottomNav"
         },
         "pc": {
-            posts: "",
-            title: "",
-            toolBar: ""
+            posts: "div[id^=\"postmessage\"]>div[id^=\"postmessage\"]",
+            title: "h1",
+            toolBar: "body"
         }
     },
 }
+
+export const toolBarClass = 'tool';

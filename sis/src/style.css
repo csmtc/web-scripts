@@ -1,9 +1,49 @@
-.fixed-bottom-left {
+.fixed-toolbar-pc {
     position: fixed;
     bottom: 20px;
     left: 20px;
-    background-color: #f0f0f0;
-    padding: 20px;
+    z-index: 99;
+
+    /* background-color: #f0f0f0;
+    padding: 1% 2% 1% 2%;
     border: 1px solid #ccc;
     border-radius: 5px;
+
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: all 0.3s ease; */
+}
+
+.float-button {
+    /* 按钮基础样式 */
+    border-radius: 15%;
+    padding: 15%;
+    background: black;
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    /* 添加投影效果 */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    /* 添加过渡动画 */
+
+    /* 可选：添加图标 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 125%;
+}
+
+/* 悬停效果 */
+.float-button:hover {
+    transform: scale(1.1);
+    /* 放大按钮 */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    background: gray;
+}
+
+/* 点击效果（可选） */
+.float-button:active {
+    transform: scale(0.95);
 }

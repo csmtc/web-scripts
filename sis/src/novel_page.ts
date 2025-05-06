@@ -4,14 +4,16 @@ import { hooks } from "./config";
 let is_mobile = get_device_type();
 let config = is_mobile ? hooks.novelPage.mb : hooks.novelPage.pc;
 
-function getCardText(card: Element): string {
+function getPostText(post: Element): string {
+    console.log("getPostText of", post);
+
     var ctx: string = "";
     var white_tag_list = ["P", "BR"];
 
-    var elements = card.childNodes;
+    var elements = post.childNodes;
     var accept = function (e: Element) {
         if (e.nodeType == 3) return true;
-        else if (e.nodeType == 1 && (white_tag_list.some(x => x == e.tagName))) return true;  // Text_Node or Element in white_list
+        else if (e.nodeType == 1 && white_tag_list.some(x => x == e.tagName)) return true;  // Text_Node or Element in white_list
         // else if (e.tagName == "FONT" && e.getAttribute("color") == null) return true;
 
         return false;
@@ -19,6 +21,8 @@ function getCardText(card: Element): string {
     elements.forEach((e_: ChildNode) => {
         var e = e_ as Element;
         if (accept(e)) {
+            console.log(e);
+
             var line;
             if (e.nodeType == 3) {  // text node
                 line = e.textContent;
@@ -38,6 +42,10 @@ function getCardText(card: Element): string {
             }
         }
     });
+    var tail_index = ctx.lastIndexOf("[]");
+    if (tail_index > 0) {
+        ctx = ctx.substring(0, tail_index);
+    }
     return ctx;
 }
 
@@ -47,13 +55,13 @@ function create_download_button() {
     if (is_mobile) {
         container.classList.add("col");
         container.classList.add("footer-col");
+    } else {
+        container.classList.add("fixed-toolbar-pc");
     }
-    // 将 div 元素添加到页面的 body 中
-    document.body.appendChild(container);
     const button = document.createElement('input');
     button.type = 'button';
-    button.textContent = 'Save';
-    // 为按钮添加点击事件监听器
+    button.value = '下载';
+    button.classList.add('float-button');
     button.addEventListener('click', save);
     container.appendChild(button);
 
@@ -66,14 +74,18 @@ function create_checkboxs() {
     posts.forEach((div) => {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
+        checkbox.innerText = '';
+        const label = document.createElement("span");
+        label.textContent = '下载本楼 ';
 
         const card_toolbar = document.createElement('div');
+        card_toolbar.appendChild(label);
         card_toolbar.appendChild(checkbox);
 
-        div.prepend(checkbox);
+        div.prepend(card_toolbar);
     });
     // 第一个checkbox默认选中
-    var first_checkbox = posts[0].lastElementChild as HTMLInputElement;
+    var first_checkbox = posts[0].querySelector("input[type='checkbox']") as HTMLInputElement;
     first_checkbox.checked = true;
 }
 
@@ -85,9 +97,9 @@ function save() {
 
     // 保存所有checkbox选中的post
     posts.forEach((post) => {
-        const checkbox = post.lastElementChild as HTMLInputElement;
+        const checkbox = post.querySelector("input[type=\"checkbox\"]") as HTMLInputElement;
         if (checkbox && checkbox.checked) {
-            let text = getCardText(post);
+            let text = getPostText(post);
             ctx += text;
         }
     });
