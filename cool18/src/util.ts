@@ -45,7 +45,7 @@ export function createAndDownloadFile(fileName: string, data: BlobPart, type: st
  *
  * @param {string} title
  */
-export function pure_title(title) {
+export function pure_title(title: string): string {
     title.replace('.*【禁忌书屋】', "");
     title.replace('202[0-9]{1}.*', "");
     return title;
