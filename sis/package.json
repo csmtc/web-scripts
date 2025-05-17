@@ -1,7 +1,7 @@
 {
     "name": "sis",
     "private": true,
-    "version": "2025.05.06",
+    "version": "2025.05.18",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -12,5 +12,8 @@
         "typescript": "^5.7.2",
         "vite": "^6.0.5",
         "vite-plugin-monkey": "^5.0.3"
+    },
+    "dependencies": {
+        "sis": "file:"
     }
 }
