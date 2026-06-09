@@ -2,19 +2,16 @@ import { GM_xmlhttpRequest } from "vite-plugin-monkey/dist/client"
 
 export var QueryStrings = {
     novelPage: {
-        mainTextMb: "#shownewsc",
-        mainTextPc: "#content-section>pre",
-        titleMb: "h1",
-        titlePc: "h1",
-        toolBarPc: ".subtitle-line>span:last-child",
-        toolBarMb: "#footShare"
+        mainText: "#content-section>pre",
+        title: "h1.main-title",
+        toolBar: ".subtitle-line>span:last-child"
     },
     mainPage: {
-        listElements: ".dc_bar2 .t_l a"
+        listElements: "li a[href*='threadview']"
     },
     searchPage: {
-        listElements: ".search-content a",
-        buttonContainerPc: ".dc_bar2 td"
+        listElements: ".post-list a[href*='threadview']",
+        buttonContainer: ".page-title-right"
     }
 }
 
@@ -26,17 +23,30 @@ export var QueryStrings = {
  * @param {String} type 文件MIME类型，默认为普通文本
  */
 export function createAndDownloadFile(fileName: string, data: BlobPart, type: string = "text/plain;charset=utf-8") {
-    // 创建Blob对象
+    // 创建Blob对象，确保使用UTF-8编码
     const blob = new Blob([data], { type: type });
     // 创建URL对象
     const url = URL.createObjectURL(blob);
     // 创建a标签
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName;
-    // 触发下载
+
+    // 处理文件名：移除非法字符，确保有扩展名
+    let cleanFileName = fileName.replace(/[<>:"/\\|?*]/g, '_').trim();
+    if (!cleanFileName.endsWith('.txt') && !cleanFileName.endsWith('.zip')) {
+        cleanFileName += '.txt';
+    }
+
+    // 使用encodeURIComponent编码文件名，解决中文乱码问题
+    a.download = cleanFileName;
+    a.style.display = 'none';
+
+    // 添加到DOM中触发下载
+    document.body.appendChild(a);
     a.click();
-    // 释放内存
+
+    // 清理
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
@@ -52,47 +62,31 @@ export function pure_title(title: string): string {
 }
 
 
-export enum PageType {
-    pc, mb
-}
-
-export function getPageType(url: string): PageType {
-    if (url.search("wap.cool18") > 0) {
-        return PageType.mb;
-    } else {
-        return PageType.pc;
-    }
-}
 
 
 
 
 /**
- * 
- * @param html 
- * @param pageUrl 
- * @param skip_header 
+ *
+ * @param html
+ * @param pageUrl
+ * @param skip_header
  * @returns [title,context]
  */
 export function htmlToNovel(doc: Document,
     is_create_file = false, skip_header = false): string[] {
-    // let doc = new DOMParser().parseFromString(html, 'text/html');
-
-    var pageType = getPageType(doc.URL);
-    let title: string;
-    let ctx = "";
-    let main_node: Element;
     var config = QueryStrings.novelPage;
-    if (pageType == PageType.mb) {
-        title = pure_title(doc.querySelector(config.titleMb).textContent);
-        main_node = doc.querySelector(config.mainTextMb);
-    } else {
-        title = pure_title(doc.querySelector(config.titlePc).textContent);
-        main_node = doc.querySelector(config.mainTextPc);
-        if (main_node.childElementCount < 50) {
-            main_node = doc.querySelector(".show_content>pre font");
-        }
+
+    // 直接从 h1.main-title 获取标题
+    const titleElement = doc.querySelector(config.title);
+    let title = pure_title(titleElement?.textContent?.trim() || "未知标题");
+
+    let main_node = doc.querySelector(config.mainText);
+    if (main_node.childElementCount < 50) {
+        main_node = doc.querySelector(".show_content>pre font");
     }
+
+    let ctx = "";
 
     var white_tag_list = ["P", "BR"];
 
@@ -118,9 +112,7 @@ export function htmlToNovel(doc: Document,
                 if (e.tagName == "P") {
                     line = e.textContent + "\n\n";
                 } else if (e.tagName == "BR") {
-                    if (pageType == PageType.mb) line = "\n";
-                    else
-                        line = "";
+                    line = "";
                 } else {
                     line = e.textContent;
                 }

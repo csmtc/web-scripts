@@ -71,7 +71,7 @@ export function search_page_inject() {
 
     createButton(container, "dl-All", dl_all);
     createButton(container, "dl-all-in-a-file", dl_all_single_file);
-    var root = document.querySelector(QueryStrings.searchPage.buttonContainerPc);
+    var root = document.querySelector(QueryStrings.searchPage.buttonContainer);
     console.log(root);
 
     insertChild(root, container);

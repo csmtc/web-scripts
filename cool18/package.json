@@ -1,7 +1,7 @@
 {
     "name": "cool18",
     "private": true,
-    "version": "2025.4.14.0",
+    "version": "2026.6.9.0",
     "type": "module",
     "scripts": {
         "dev": "vite",

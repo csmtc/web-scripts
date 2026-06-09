@@ -13,10 +13,10 @@ export default defineConfig({
                 icon: 'https://www.google.com/s2/favicons?sz=64&domain=cool18s.club',
                 match: ['https://www.cool18.com/*', "https://wap.cool18.com/*"],
                 connect: ['https://www.cool18.com/*', "https://wap.cool18.com/*"],
-                updateURL: 'https://atcra.top:50000/web-script/cool18.user.js',
-                downloadURL: 'https://atcra.top:50000/web-script/cool18.user.js'
-                // updateURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/cool18/dist/cool18.user.js',
-                // downloadURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/cool18/dist/cool18.user.js'
+                // updateURL: 'https://atcra.top:50000/web-script/cool18.user.js',
+                // downloadURL: 'https://atcra.top:50000/web-script/cool18.user.js'
+                updateURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/cool18/dist/cool18.user.js',
+                downloadURL: 'https://raw.githubusercontent.com/csmtc/web-scripts/main/cool18/dist/cool18.user.js'
             },
             // server: { mountGmApi: true },
         }),
