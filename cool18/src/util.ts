@@ -3,14 +3,14 @@ import { GM_xmlhttpRequest } from "vite-plugin-monkey/dist/client"
 export var QueryStrings = {
     novelPage: {
         mainText: "#content-section>pre",
-        title: "h1.main-title",
+        title: ".title-section",
         toolBar: ".subtitle-line>span:last-child"
     },
     mainPage: {
         listElements: "li a[href*='threadview']"
     },
     searchPage: {
-        listElements: ".post-list a[href*='threadview']",
+        listElements: ".thread-list a[href*='threadview']",
         buttonContainer: ".page-title-right"
     }
 }
@@ -23,30 +23,17 @@ export var QueryStrings = {
  * @param {String} type 文件MIME类型，默认为普通文本
  */
 export function createAndDownloadFile(fileName: string, data: BlobPart, type: string = "text/plain;charset=utf-8") {
-    // 创建Blob对象，确保使用UTF-8编码
+    // 创建Blob对象
     const blob = new Blob([data], { type: type });
     // 创建URL对象
     const url = URL.createObjectURL(blob);
     // 创建a标签
     const a = document.createElement("a");
     a.href = url;
-
-    // 处理文件名：移除非法字符，确保有扩展名
-    let cleanFileName = fileName.replace(/[<>:"/\\|?*]/g, '_').trim();
-    if (!cleanFileName.endsWith('.txt') && !cleanFileName.endsWith('.zip')) {
-        cleanFileName += '.txt';
-    }
-
-    // 使用encodeURIComponent编码文件名，解决中文乱码问题
-    a.download = cleanFileName;
-    a.style.display = 'none';
-
-    // 添加到DOM中触发下载
-    document.body.appendChild(a);
+    a.download = fileName;
+    // 触发下载
     a.click();
-
-    // 清理
-    document.body.removeChild(a);
+    // 释放内存
     URL.revokeObjectURL(url);
 }
 
@@ -77,9 +64,12 @@ export function htmlToNovel(doc: Document,
     is_create_file = false, skip_header = false): string[] {
     var config = QueryStrings.novelPage;
 
-    // 直接从 h1.main-title 获取标题
-    const titleElement = doc.querySelector(config.title);
-    let title = pure_title(titleElement?.textContent?.trim() || "未知标题");
+    // 标题在 .title-section 中，包含标题和发送者信息
+    const titleSection = doc.querySelector(config.title);
+    const titleText = titleSection?.textContent || "";
+    // 提取第一行作为标题（去掉空白和发送者信息）
+    const titleLines = titleText.split('\n').filter(line => line.trim().length > 0);
+    let title = pure_title(titleLines[0]?.trim() || "未知标题");
 
     let main_node = doc.querySelector(config.mainText);
     if (main_node.childElementCount < 50) {
@@ -227,7 +217,9 @@ export function add_download_buttons() {
         btn.type = "button";
         btn.value = "下载";
         btn.addEventListener("click", function (evt) {
-            dl_chapter(url);
+            dl_chapter(url).then(doc => {
+                htmlToNovel(doc, true);
+            });
         });
         a.parentElement.insertBefore(btn, a);
     })
