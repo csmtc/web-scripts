@@ -1,0 +1,519 @@
+/* ── RSSHub Helper ─────────────────────────────────────────── */
+
+/* CSS reset for our panel */
+.rsshub-helper,
+.rsshub-helper * {
+  box-sizing: border-box;
+}
+
+/* ── Global floating panel ─────────────────────────────────── */
+.rsshub-helper {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  width: 380px;
+  max-height: calc(100vh - 88px);
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1a1a2e;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.dark .rsshub-helper {
+  color: #e2e8f0;
+  background: #1e1e2e;
+  border-color: #313244;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Toggle button (minimized state) ──────────────────────── */
+.rsshub-helper__toggle {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  z-index: 10000;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.rsshub-helper__toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dark .rsshub-helper__toggle {
+  background: #1e1e2e;
+  border-color: #313244;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.rsshub-helper__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  cursor: grab;
+}
+
+.dark .rsshub-helper__header {
+  border-bottom-color: #313244;
+}
+
+.rsshub-helper__header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rsshub-helper__header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rsshub-helper__header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.rsshub-helper__header-actions button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #64748b;
+  transition: background 0.15s, color 0.15s;
+}
+
+.rsshub-helper__header-actions button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.dark .rsshub-helper__header-actions button:hover {
+  background: #313244;
+  color: #e2e8f0;
+}
+
+/* ── Scrollable body ───────────────────────────────────────── */
+.rsshub-helper__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.rsshub-helper__body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.rsshub-helper__body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dark .rsshub-helper__body::-webkit-scrollbar-thumb {
+  background: #45475a;
+}
+
+/* ── Domain section ────────────────────────────────────────── */
+.rsshub-helper__domain {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .rsshub-helper__domain {
+  border-bottom-color: #313244;
+}
+
+.rsshub-helper__domain label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dark .rsshub-helper__domain label {
+  color: #94a3b8;
+}
+
+.rsshub-helper__domain-input-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+.rsshub-helper__domain-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+.rsshub-helper__domain-input:focus {
+  border-color: #f7931e;
+  box-shadow: 0 0 0 3px rgba(247, 147, 30, 0.15);
+}
+
+.dark .rsshub-helper__domain-input {
+  background: #181825;
+  border-color: #45475a;
+  color: #cdd6f4;
+}
+
+.dark .rsshub-helper__domain-input:focus {
+  border-color: #f7931e;
+  box-shadow: 0 0 0 3px rgba(247, 147, 30, 0.25);
+}
+
+.rsshub-helper__domain-input::placeholder {
+  color: #9ca3af;
+}
+
+.rsshub-helper__domain-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.rsshub-helper__domain-btn:hover {
+  opacity: 0.9;
+}
+
+.rsshub-helper__domain-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Route cards ────────────────────────────────────────────── */
+.rsshub-helper__routes {
+  padding: 8px 0;
+}
+
+.rsshub-helper__route-card {
+  margin: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dark .rsshub-helper__route-card {
+  border-bottom-color: #181825;
+}
+
+.rsshub-helper__route-card:last-child {
+  border-bottom: none;
+}
+
+.rsshub-helper__route-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.rsshub-helper__route-header:hover {
+  background: #f8fafc;
+}
+
+.dark .rsshub-helper__route-header:hover {
+  background: #181825;
+}
+
+.rsshub-helper__route-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rsshub-helper__route-arrow {
+  font-size: 12px;
+  color: #94a3b8;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.rsshub-helper__route-card.open .rsshub-helper__route-arrow {
+  transform: rotate(90deg);
+}
+
+.rsshub-helper__route-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+.dark .rsshub-helper__route-name {
+  color: #cdd6f4;
+}
+
+.rsshub-helper__route-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #3b82f6;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.dark .rsshub-helper__route-badge {
+  background: #1e1e3a;
+  color: #89b4fa;
+}
+
+/* ── Route body (expanded) ─────────────────────────────────── */
+.rsshub-helper__route-body {
+  display: none;
+  padding: 0 16px 14px;
+}
+
+.rsshub-helper__route-card.open .rsshub-helper__route-body {
+  display: block;
+}
+
+.rsshub-helper__param-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rsshub-helper__param-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  min-width: 90px;
+  flex-shrink: 0;
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+.dark .rsshub-helper__param-label {
+  color: #a6adc8;
+}
+
+.rsshub-helper__param-optional {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-left: -4px;
+}
+
+.rsshub-helper__param-input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+}
+
+.rsshub-helper__param-input:focus {
+  border-color: #f7931e;
+  box-shadow: 0 0 0 2px rgba(247, 147, 30, 0.12);
+}
+
+.dark .rsshub-helper__param-input {
+  background: #181825;
+  border-color: #45475a;
+  color: #cdd6f4;
+}
+
+.dark .rsshub-helper__param-input:focus {
+  border-color: #f7931e;
+  box-shadow: 0 0 0 2px rgba(247, 147, 30, 0.2);
+}
+
+.rsshub-helper__param-input::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ── Generated URL area ─────────────────────────────────────── */
+.rsshub-helper__result {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.dark .rsshub-helper__result {
+  background: #1c1a10;
+  border-color: #453a10;
+}
+
+.rsshub-helper__result-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #92400e;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dark .rsshub-helper__result-label {
+  color: #fbbf24;
+}
+
+.rsshub-helper__result-url {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rsshub-helper__result-url a {
+  flex: 1;
+  font-size: 12px;
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+  color: #b45309;
+  word-break: break-all;
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+.rsshub-helper__result-url a:hover {
+  text-decoration: underline;
+}
+
+.dark .rsshub-helper__result-url a {
+  color: #fbbf24;
+}
+
+.rsshub-helper__copy-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #fde68a;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #b45309;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.rsshub-helper__copy-btn:hover {
+  background: #fef3c7;
+}
+
+.rsshub-helper__copy-btn:active {
+  transform: scale(0.93);
+}
+
+.dark .rsshub-helper__copy-btn {
+  background: #1c1a10;
+  border-color: #453a10;
+  color: #fbbf24;
+}
+
+.dark .rsshub-helper__copy-btn:hover {
+  background: #2a2510;
+}
+
+/* ── Toast notification ─────────────────────────────────────── */
+.rsshub-helper__toast {
+  position: fixed;
+  top: 80px;
+  right: 70px;
+  z-index: 10001;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #10b981;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+
+.rsshub-helper__toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Empty state ────────────────────────────────────────────── */
+.rsshub-helper__empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.rsshub-helper__empty-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+/* ── No-domain hint ─────────────────────────────────────────── */
+.rsshub-helper__hint {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  font-style: italic;
+}
