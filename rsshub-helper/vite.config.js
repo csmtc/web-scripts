@@ -8,7 +8,7 @@ export default defineConfig({
       userscript: {
         name: "RSSHub Helper",
         namespace: "atcra",
-        version: "1.0.0",
+        version: "1.0.2",
         author: "atcra",
         description:
           "在 RSSHub 文档页面中提供自定义域名路由生成和参数填写功能",
@@ -16,8 +16,10 @@ export default defineConfig({
         match: ["https://docs.rsshub.app/routes/*"],
         grant: ["GM_setValue", "GM_getValue", "GM_addStyle"],
         "run-at": "document-idle",
-        updateURL: "https://raw.githubusercontent.com/csmtc/web-scripts/main/rsshub-helper/dist/rsshub-helper.user.js",
-        downloadURL: "https://raw.githubusercontent.com/csmtc/web-scripts/main/rsshub-helper/dist/rsshub-helper.user.js",
+        updateURL:
+          "https://raw.githubusercontent.com/csmtc/web-scripts/main/rsshub-helper/dist/rsshub-helper.user.js",
+        downloadURL:
+          "https://raw.githubusercontent.com/csmtc/web-scripts/main/rsshub-helper/dist/rsshub-helper.user.js",
       },
     }),
   ],

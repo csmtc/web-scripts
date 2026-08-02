@@ -425,34 +425,75 @@ function getNestedValue(store, routePath, paramName) {
   return store?.[routePath]?.[paramName] || "";
 }
 
-// ── Init ─────────────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────
+
+let currentPanel = null;
+let currentToggle = null;
+let currentUrl = location.href;
+
+function removePanel() {
+  if (currentPanel) { currentPanel.remove(); currentPanel = null; }
+  if (currentToggle) { currentToggle.remove(); currentToggle = null; }
+}
+
+function setupPanel() {
+  const routes = detectRoutes();
+  if (routes.length > 0) {
+    removePanel();
+    createPanel(routes);
+    currentPanel = document.querySelector(".rsshub-helper");
+    currentToggle = document.querySelector(".rsshub-helper__toggle");
+  } else {
+    removePanel();
+  }
+}
+
+/** Poll until routes appear in the DOM (VitePress renders asynchronously) */
+function pollForRoutes(maxAttempts, intervalMs, callback) {
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts++;
+    const routes = detectRoutes();
+    if (routes.length > 0 || attempts >= maxAttempts) {
+      clearInterval(timer);
+      if (callback) callback();
+    }
+  }, intervalMs);
+}
+
+/** Called on every navigation (initial load, SPA, popstate) */
+function onNavigate() {
+  currentUrl = location.href;
+  removePanel();
+  pollForRoutes(40, 500, () => setupPanel());
+}
 
 function init() {
-  // Wait a bit for VitePress SPA to render
-  const tryDetect = () => {
-    const routes = detectRoutes();
-    if (routes.length > 0 || document.querySelector(".vp-doc")) {
-      createPanel(routes);
-    } else {
-      // Retry after a short delay (SPA navigation)
-      setTimeout(tryDetect, 800);
-    }
-  };
-
-  // First attempt
-  tryDetect();
-
-  // Also handle VitePress SPA navigation
-  const observer = new MutationObserver(() => {
-    // If panel already exists, skip
-    if (document.querySelector(".rsshub-helper")) return;
-    const routes = detectRoutes();
-    if (routes.length > 0) {
-      createPanel(routes);
-    }
+  // Initial attempt (immediate, then poll for late-rendering)
+  setupPanel();
+  pollForRoutes(30, 500, () => {
+    if (!currentPanel) setupPanel();
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  // SPA navigation via popstate (VitePress client-side routing)
+  window.addEventListener("popstate", onNavigate);
+
+  // SPA navigation via pushState - intercept History API
+  const origPushState = history.pushState;
+  history.pushState = function (...args) {
+    origPushState.apply(this, args);
+    if (location.href !== currentUrl) onNavigate();
+  };
+  const origReplaceState = history.replaceState;
+  history.replaceState = function (...args) {
+    origReplaceState.apply(this, args);
+    if (location.href !== currentUrl) onNavigate();
+  };
+
+  // Fallback: poll URL changes every 500ms (catches edge cases)
+  setInterval(() => {
+    if (location.href !== currentUrl) onNavigate();
+  }, 500);
 }
 
 // Start when DOM is ready

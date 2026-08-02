@@ -1,0 +1,127 @@
+--- Begin Patch
+*** Update File: src/main.js
+@@
+-let lastUrl = location.href;
+-let panelCreated = false;
+-
+-function removeOldPanel() {
+-  const old = document.querySelector(".rsshub-helper");
+-  if (old) old.remove();
+-  const oldToggle = document.querySelector(".rsshub-helper__toggle");
+-  if (oldToggle) oldToggle.remove();
+-  panelCreated = false;
+-}
+-
+-function tryCreatePanel() {
+-  if (panelCreated) return;
+-  const routes = detectRoutes();
+-  if (routes.length > 0) {
+-    removeOldPanel();
+-    createPanel(routes);
+-    panelCreated = true;
+-  }
+-}
+-
+-function init() {
+-  // Initial attempt
+-  tryCreatePanel();
+-
+-  // Polling: VitePress may render content asynchronously
+-  let polls = 0;
+-  const pollTimer = setInterval(() => {
+-    polls++;
+-    if (polls > 30 || panelCreated) { clearInterval(pollTimer); return; }
+-    tryCreatePanel();
+-  }, 500);
+-
+-  // MutationObserver: catch late DOM mutations
+-  const observer = new MutationObserver(() => {
+-    if (!panelCreated) tryCreatePanel();
+-  });
+-  observer.observe(document.body, { childList: true, subtree: true });
+-
+-  // SPA navigation: detect URL changes (VitePress client-side routing)
+-  setInterval(() => {
+-    if (location.href !== lastUrl) {
+-      lastUrl = location.href;
+-      removeOldPanel();
+-      setTimeout(tryCreatePanel, 600);
+-    }
+-  }, 300);
+-}
+-// Start when DOM is ready
+-if (document.readyState === "loading") {
+-  document.addEventListener("DOMContentLoaded", init);
+-} else {
+-  init();
+-}
++let currentPanel = null;
++let currentToggle = null;
++let currentUrl = location.href;
++let navPollingTimer = null;
++
++function removePanel() {
++  if (currentPanel) { currentPanel.remove(); currentPanel = null; }
++  if (currentToggle) { currentToggle.remove(); currentToggle = null; }
++}
++
++function setupPanel() {
++  const routes = detectRoutes();
++  if (routes.length > 0) {
++    removePanel();
++    createPanel(routes);
++    currentPanel = document.querySelector(".rsshub-helper");
++    currentToggle = document.querySelector(".rsshub-helper__toggle");
++  } else {
++    removePanel();
++  }
++}
++
++function pollForRoutes(maxAttempts, intervalMs, callback) {
++  let attempts = 0;
++  const timer = setInterval(() => {
++    attempts++;
++    const routes = detectRoutes();
++    if (routes.length > 0 || attempts >= maxAttempts) {
++      clearInterval(timer);
++      if (callback) callback();
++    }
++  }, intervalMs);
++}
++
++function onNavigate() {
++  currentUrl = location.href;
++  removePanel();
++  pollForRoutes(40, 500, () => setupPanel());
++}
++
++function init() {
++  setupPanel();
++  pollForRoutes(30, 500, () => {
++    if (!currentPanel) setupPanel();
++  });
++
++  window.addEventListener("popstate", onNavigate);
++
++  const origPushState = history.pushState;
++  history.pushState = function (...args) {
++    origPushState.apply(this, args);
++    if (location.href !== currentUrl) onNavigate();
++  };
++  const origReplaceState = history.replaceState;
++  history.replaceState = function (...args) {
++    origReplaceState.apply(this, args);
++    if (location.href !== currentUrl) onNavigate();
++  };
++
++  navPollingTimer = setInterval(() => {
++    if (location.href !== currentUrl) onNavigate();
++  }, 500);
++}
++
++if (document.readyState === "loading") {
++  document.addEventListener("DOMContentLoaded", init);
++} else {
++  init();
++}
+*** End Patch
